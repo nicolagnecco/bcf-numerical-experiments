@@ -1,0 +1,30 @@
+# Constants:
+DRY_RUN = False
+
+N_WORKERS = 80
+
+DATABASE_NAME = "simulations_01.pk"
+
+SEED = 1321
+
+METHODS = [
+    ("ControlTree", ControlTree()),
+    ("ControlTree_no_imp", ControlTree(is_imp_=False)),
+    ("ControlOLS", ControlTreeOlsSplit()),
+    ("ControlOLS_no_imp", ControlTreeOlsSplit(is_imp_=False)),
+    ("OLS", RegTreeSklearn()),
+    ("Causal", CausalFunction()),
+    ("IMP", IMPFunction()),
+]
+
+PARAMS = {
+    "n_reps": range(20),
+    "n": [1000],
+    "p": [5],
+    "p_effective": [3, 5],
+    "tree_depth": [3],
+    "r": [1, 2, 5],
+    "interv_strength": [1, 10, 20, 30],
+    "gamma_norm": [0.5, 1.5],
+    "sd_y": [0.1],
+}
