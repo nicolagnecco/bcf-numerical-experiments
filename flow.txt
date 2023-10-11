@@ -1,0 +1,1 @@
+python notebooks/asc2csv.py ../data/raw/prism_temp/ "../data/processed/temp-data-california.csv" "Mean_Temp"
