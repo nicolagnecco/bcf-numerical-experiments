@@ -204,6 +204,12 @@ python main
 - [Sebastian Engelke](http://www.sengelke.com/)
 - [Niklas Pfister](https://niklaspfister.github.io/)
 
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+
 ## References
 [1] Nicola Gnecco, Jonas Peters, Sebastian Engelke, and Niklas Pfister. 2023. "Boosted Control Functions." arXiv Preprint [https://arxiv.org/abs/2310.05805].
 
