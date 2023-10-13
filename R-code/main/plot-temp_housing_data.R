@@ -2,8 +2,8 @@ source("main/dependencies.R")
 
 # Constant definitions
 HOUSEDATA <- "../data/processed/housing-temp.csv"
-RES_TEST <- "../results/output_data/housing/test_mse.csv"
-RES_TRAIN <- "../results/output_data/housing/training_mse.csv"
+RES_TEST <- "../results/output_data/test_mse.csv"
+RES_TRAIN <- "../results/output_data/training_mse.csv"
 FIG_NAME <- "../results/figures/housing_methods.pdf"
 
 # We consider the California housing dataset 

@@ -73,7 +73,7 @@ theme_set(theme_bw() +
                                         margin=margin(t=15)),
               text = element_text(size = 11),
               axis.ticks = element_blank(),
-              panel.grid.major = element_line(size = 0.25)
+              panel.grid.major = element_line(linewidth = 0.25)
             )
 )
 

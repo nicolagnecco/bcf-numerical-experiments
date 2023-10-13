@@ -3,14 +3,8 @@ source("main/dependencies.R")
 # Constant definitions
 P_EFF <- 5
 GAMMA_NORM <- 2
-CSVFILE <- "../results/output_data/simulations_02-bcf.csv"
+CSVFILE <- "../results/output_data/experiment_1-bcf.csv"
 FILENAME <- glue::glue("../results/figures/rank_vs_p_eff-gamma={GAMMA_NORM}.pdf")
-
-# Function definitions
-cut_above <- function(x, thres){
-  x[x > thres] <- NaN
-  return(x)
-}
 
 # Main 
 df <- read_csv(CSVFILE) %>% 
@@ -22,15 +16,9 @@ df_2 <- df %>%
    filter(q %in% c(1, 5, 7, 10)) %>% 
   filter(method_names %in% c("BCF", "OLS", "ConstFunc", "Causal","IMP"))
 
-
 df_t <- df_2 %>% 
   group_by(method_names, r, q, p, p_effective, gamma_norm, interv_strength) %>% 
   summarise(MSE = mean(MSE)) %>% 
-  mutate(MSE = if_else(method_names=="OLSTwicing",
-                           case_when(gamma_norm == 1 ~ cut_above(MSE, 3.5),
-                                     gamma_norm == 1.5 ~ cut_above(MSE, 7.5),
-                                     gamma_norm == 2 ~ cut_above(MSE, 12)),
-                           MSE)) %>%
   mutate(method_names = refactor_methods(method_names, rev=TRUE),
          rank = texify_column(q, "q"),
          p = texify_column(p, "p"),
