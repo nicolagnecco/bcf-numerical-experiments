@@ -28,7 +28,7 @@ class BCF(BaseEstimator):
     """
     Boosted Control Function (BCF) Estimator.
 
-    This estimator implements the BCF methodology from ??? to make predictions under distributional shifts induced by exogenous/instrumental variables.
+    This estimator implements the BCF method from the paper [Boosted Control Functions](https://arxiv.org/abs/2310.05805). It makes predictions under distributional shifts induced by exogenous/instrumental variables in the presence of unobserved confounding.
 
     Parameters:
     ----------
