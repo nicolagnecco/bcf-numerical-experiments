@@ -16,8 +16,9 @@ from src.bcf.boosted_control_function_2 import BCF, OLS
 from xgboost import XGBRegressor
 
 # Constants and function definitions
-DATA_PATH = "../data/housing/"
+DATA_PATH = "../data/processed/"
 RESULT_PATH = "../results/output_data/"
+SAVE_PREDICTIONS = False
 NO_LAT_LON = True  # Set to True to use only X, and False to use [X, Z]
 USE_WHOLE_DATA = False  # Set to True if don't split train/test
 SPLIT_CRITERIONS = [
@@ -286,10 +287,11 @@ def main():
 
         # predict models on training
         f_hats = predict_models(bcf, bcf_lin, ls, ols, X_train, Z_train)
-        pd.concat([y_train, X_train, Z_train, f_hats], axis=1).to_csv(  # type: ignore
-            f"{RESULT_PATH}train_data_{i}{'_noLatLon' if NO_LAT_LON else ''}.csv",
-            index=False,
-        )
+        if SAVE_PREDICTIONS:
+            pd.concat([y_train, X_train, Z_train, f_hats], axis=1).to_csv(  # type: ignore
+                f"{RESULT_PATH}train_data_{i}{'_noLatLon' if NO_LAT_LON else ''}.csv",
+                index=False,
+            )
 
         # evaluate models on training
         print("=================")
@@ -301,10 +303,11 @@ def main():
 
         # predict models on test
         f_hats = predict_models(bcf, bcf_lin, ls, ols, X_test, Z_test)
-        pd.concat([y_test, X_test, Z_test, f_hats], axis=1).to_csv(
-            f"{RESULT_PATH}test_data_{i}{'_noLatLon' if NO_LAT_LON else ''}.csv",
-            index=False,
-        )
+        if SAVE_PREDICTIONS:
+            pd.concat([y_test, X_test, Z_test, f_hats], axis=1).to_csv(
+                f"{RESULT_PATH}test_data_{i}{'_noLatLon' if NO_LAT_LON else ''}.csv",
+                index=False,
+            )
 
         # evaluate models on test
         print("=================")

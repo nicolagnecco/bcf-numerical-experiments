@@ -12,8 +12,8 @@ from src.simulations.simulations_funcs import run_simulation_rank
 DRY_RUN = False
 N_WORKERS = 8
 DATABASE_DIR = "../results/output_data/"
-DATABASE_NAME = "simulations_03-nullspace.pk"
-RESULT_NAME = "simulations_03-nullspace.csv"
+DATABASE_NAME = "experiment_2-nullspace.pk"
+RESULT_NAME = "experiment_2-nullspace.csv"
 
 SEED = 881588530
 

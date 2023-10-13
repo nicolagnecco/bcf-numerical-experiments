@@ -25,35 +25,22 @@ cd $PBS_O_WORKDIR
 NPROCS=`wc -l < $PBS_NODEFILE`
 echo This job has allocated $NPROCS nodes
 
-# Load all required modules for the job
+# Load all required modules (specific to your cluster) for the job
 module load tools
 module load perl/5.20.2
 module load miniconda3/4.10.3
-# conda create --prefix ~/envs -y
-conda activate ~/base_env
-# pip install pip --upgrade
-# pip install -r requirements.txt
-# pip install -e .
 
-# Redirect standard output and error
-# exec 1> sims.log
-# exec 2> sims.log
+# Create a conda environment and install requirements
+conda create --prefix ~/envs -y
+conda activate ~/envs
+pip install pip --upgrade
+pip install -r requirements.txt
+pip install -e .
+
 
 # This is where the work is done
 # Make sure that this script is not bigger than 64kb ~ 150 lines, 
 # otherwise put in separate script and execute from here
-
-
-python notebooks/housing_data.py $1
-# python notebooks/crime_data.py $1 # crime data
-# python notebooks/simulations_01.py # Parameter sweep on trees 
-# python notebooks/simulations_02.py # Parameter sweep on trees 
-# python notebooks/experiment_8.py # Random forests experiment 
+$1
 
 conda deactivate
-
-# ---------------------
-# LIST OF qsub configs
-#qsub -W group_list=ku_00179 -A ku_00179 -l nodes=1:ppn=40,mem=16gb,walltime=3600 notebooks/run_job.sh
-#qsub -W group_list=ku_00179 -A ku_00179 -l nodes=2:ppn=40:thinnode,mem=150gb,walltime=7200 notebooks/run_job.sh
-#qsub -W group_list=ku_00179 -A ku_00179 -l nodes=1:ppn=10:thinnode,mem=40gb,walltime=1000 notebooks/run_job.sh

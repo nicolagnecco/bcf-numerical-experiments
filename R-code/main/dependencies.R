@@ -1,18 +1,15 @@
 # dependency imports
-library(tidyverse)
-library(here)
-library(cowplot)
-library(grid)
-library(gridExtra)
-library(ggh4x)
-library(latex2exp)
-library(rngtools)
-library(egg)
-library(backports)
-library(khroma)
+chooseCRANmirror(ind = 1)
+is_pacman_installed <- "pacman" %in% rownames(installed.packages())
+if (is_pacman_installed == FALSE) install.packages("pacman")
+
+# load-install-cran
+cran_packs <- c(
+  "tidyverse", "here", "knitr", "egg", "latex2exp", "khroma"
+)
+
+pacman::p_load(cran_packs, update = FALSE, character.only = TRUE)
+
 
 purrr::map(here::here("R", list.files(here::here("R"))), source)
 
-# R options
-options(future.rng.onMisuse = "ignore")
-RNGkind(kind = "L'Ecuyer-CMRG")

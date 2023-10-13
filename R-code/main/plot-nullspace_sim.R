@@ -3,7 +3,7 @@ source("main/dependencies.R")
 smooth_rainbow <- colour("smooth rainbow")
 
 # Constant definitions
-CSVFILE <- "../results/output_data/simulations_03-nullspace.csv"
+CSVFILE <- "../results/output_data/experiment_2-nullspace.csv"
 FILENAME <-"../results/figures/column-space.pdf"
 
 

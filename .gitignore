@@ -170,3 +170,8 @@ MANIFEST
 
 # Vscode
 .vscode
+
+
+# Don't ignore .gitkeep
+!results/figures
+!results/output_data

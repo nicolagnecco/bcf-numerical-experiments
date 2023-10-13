@@ -12,8 +12,8 @@ from src.simulations.simulations_funcs import run_simulation
 DRY_RUN = False
 N_WORKERS = 80
 DATABASE_DIR = "../results/output_data/"
-DATABASE_NAME = "simulations_02-bcf.pk"
-RESULT_NAME = "simulations_02-bcf.csv"
+DATABASE_NAME = "experiment_1-bcf.pk"
+RESULT_NAME = "experiment_1-bcf.csv"
 
 SEED = 17837797101191184914958285
 

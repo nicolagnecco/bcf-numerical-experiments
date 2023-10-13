@@ -1,4 +1,4 @@
-library(tidyverse)
+source("main/dependencies.R")
 
 # Constant definitions
 INPUT_TEMP <- "../data/processed/temp-data-california.csv"
