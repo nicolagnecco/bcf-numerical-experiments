@@ -7,8 +7,7 @@ CSVFILE <- "../results/output_data/experiment_1-bcf.csv"
 FILENAME <- glue::glue("../results/figures/rank_vs_p_eff-gamma={GAMMA_NORM}.pdf")
 
 # Main 
-df <- read_csv(CSVFILE) %>% 
-  filter(`_run_seq` == 1)
+df <- read_csv(CSVFILE)
 
 df_2 <- df %>% 
    filter(gamma_norm == GAMMA_NORM) %>% 
