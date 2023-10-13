@@ -175,3 +175,4 @@ MANIFEST
 # Don't ignore .gitkeep
 !results/figures
 !results/output_data
+!data/processed/.gitkeep
