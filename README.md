@@ -8,7 +8,7 @@ The goal of this repository is to reproduce the numerical experiments from [1].
 - [Instructions](#instructions)
     - [Experiment 1: Predicting unseen interventions](#experiment-1-predicting-unseen-interventions)
     - [Experiment 2: Estimating M0](#experiment-2-estimating-m0)
-    - [California housing dataset](#cal-housing)
+    - [California housing dataset](#california-housing-dataset)
 - [Contributors](#contributors)
 - [License](#license)
 - [References](#references)
