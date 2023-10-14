@@ -15,8 +15,6 @@ cut_above <- function(x, thres){
 
 # Null space experiment
 dat <- read_csv(CSVFILE) %>% 
-  filter(`_run_seq` == 1) %>%
-  # mutate(q_correct = q == k_opt) %>% 
   group_by(eigengap, p, r, q, n) %>% 
   summarise(dist = mean(dist_null_space)) %>% 
   filter(q %in% c(5)) %>% 
