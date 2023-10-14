@@ -1,6 +1,19 @@
 # Boosted Control Functions – Numerical experiments
 
-The goal of this repository is to reproduce the numerical experiments from [1].
+The goal of this repository is to reproduce the numerical experiments from <a href="#ref1">[1]</a><a id="ref1-back"></a>.
+
+If you use this software in your work, please cite it using the following metadata.
+
+```bibtex
+@misc{gnecco2023boosted,
+      title={Boosted Control Functions}, 
+      author={Nicola Gnecco and Jonas Peters and Sebastian Engelke and Niklas Pfister},
+      year={2023},
+      eprint={2310.05805},
+      archivePrefix={arXiv},
+      primaryClass={stat.ML}
+}
+```
 
 ## Table of Contents
 - [Directory Structure](#directory-structure)
@@ -8,7 +21,7 @@ The goal of this repository is to reproduce the numerical experiments from [1].
 - [Instructions](#instructions)
     - [Experiment 1: Predicting unseen interventions](#experiment-1-predicting-unseen-interventions)
     - [Experiment 2: Estimating M0](#experiment-2-estimating-m0)
-    - [California housing dataset](#cal-housing)
+    - [California housing dataset](#california-housing-dataset)
 - [Contributors](#contributors)
 - [License](#license)
 - [References](#references)
@@ -26,8 +39,7 @@ The goal of this repository is to reproduce the numerical experiments from [1].
 │       └── prism_temp  # Temperature data 
 |
 ├── python
-│   ├── configs
-│   ├── main
+│   ├── main            # Python scripts
 │   └── src             
 │       ├── bcf         # Classes and functions for BCF
 │       ├── scenarios   # Functions to generate data
@@ -58,7 +70,7 @@ pip --version
 If you don't have Python or pip installed, please [download Python](https://www.python.org/downloads/) and install it. Pip is included in Python versions 3.4+.
 
 2. **Navigate to python directory:**
-Use the terminal to navigate to the directory containing your `requirements.txt `file.
+Use the terminal to navigate to the directory containing your [`requirements.txt`](./python/requirements.txt) file.
 ```bash
 cd python
 ```
@@ -71,8 +83,8 @@ pip install -r requirements.txt
 pip install -e . 
 ```
 
-The first line will install all the Python packages listed in `requirements.txt`. 
-The second line will install the python code located in `./python/src/` as a package.
+The first line will install all the Python packages listed in [`requirements.txt`](./python/requirements.txt). 
+The second line will install the python code located in [`./python/src/`](./python/src/) as a package.
 
 :warning: Consider [creating a new Python environment](https://conda.io/projects/conda/en/latest/user-guide/getting-started.html) before installing the Python packages.
 
@@ -85,7 +97,7 @@ R --version
 If you don't have R installed please [download R](https://cran.rstudio.com/) and install it.
 
 2. **Install the requirements:**
-Move to the R-code directory and launch the R script `dependencies.R` by running in the terminal:
+Move to the R-code directory and launch the R script [`dependencies.R`](./R-code/main/dependencies.R) by running in the terminal:
 ```bash
 cd R-code
 Rscript --vanilla main/dependencies.R
@@ -104,7 +116,7 @@ Rscript --vanilla main/dependencies.R
 
 **1a) How to run on a PBS/TORQUE cluster:**
 
-- Open `./python/main/run_job.sh` and modify lines 29–31 depending on your cluster.
+- Open [`./python/main/run_job.sh`](./python/main/run_job.sh) and modify lines 29–31 depending on your cluster.
 - From the root of the project, in the terminal type the following:
 ```bash
 cd python
@@ -114,7 +126,7 @@ qsub main/run_job.sh "python main/experiment_1.py"
 
 **1b) How to run locally**
 
-- Open `./python/main/experiment_1.py` and on line 13 set the number of cores according to your machine, e.g., `N_WORKERS = 4`.
+- Open  [`./python/main/experiment_1.py`](./python/main/experiment_1.py) and on line 13 set the number of cores according to your machine, e.g., `N_WORKERS = 4`.
 
 - From the root of the project, in the terminal type the following:
 ```bash
@@ -123,7 +135,7 @@ cd python
 python main/experiment_1.py
 ```
 
-:bulb: To run only a few iterations of the experiment, change the setting on line 29 of `./python/main/experiment_1.py`, e.g.,  `"n_reps": range(2)`.
+:bulb: To run only a few iterations of the experiment, change the number of repetitions on line 29 of [`./python/main/experiment_1.py`](./python/main/experiment_1.py), e.g.,  `"n_reps": range(2)`.
 
 
 **2) Plot results**
@@ -142,7 +154,7 @@ Rscript --vanilla main/plot-interv_sim.R
 
 **1a) How to run on a PBS/TORQUE cluster:**
 
-- Open `./python/main/run_job.sh` and modify lines 29–31 depending on your cluster.
+- Open [`./python/main/run_job.sh`](./python/main/run_job.sh) and modify lines 29–31 depending on your cluster.
 - From the root of the project, in the terminal type the following:
 ```bash
 cd python
@@ -152,7 +164,7 @@ qsub main/run_job.sh "python main/experiment_2.py"
 
 **1b) How to run locally**
 
-- Open `./python/main/experiment_2.py` and on line 13 set the number of cores according to your machine, e.g., `N_WORKERS = 4`.
+- Open [`./python/main/experiment_2.py`](./python/main/experiment_2.py) and on line 13 set the number of cores according to your machine, e.g., `N_WORKERS = 4`.
 
 - From the root of the project, in the terminal type the following:
 ```bash
@@ -161,7 +173,7 @@ cd python
 python main/experiment_2.py
 ```
 
-:bulb: To run only a few iterations of the experiment, change the setting on line 31 of `./python/main/experiment_2.py`, e.g.,  `"n_reps": range(2)`.
+:bulb: To run only a few iterations of the experiment, change the number of repetitions on line 31 of [`./python/main/experiment_2.py`](./python/main/experiment_2.py), e.g.,  `"n_reps": range(2)`.
 
 
 **2) Plot results**
@@ -176,9 +188,8 @@ Rscript --vanilla main/plot-nullspace_sim.R
 
 ### California housing dataset
 
-To run the experiment and produce the figures for the  the California housing dataset, follow these steps. 
+To run the experiment and produce the figures for the California housing dataset, follow these steps. 
 
-1. Preprocess the data.
 ```bash
 cd python
 
@@ -192,10 +203,12 @@ Rscript --vanilla main/prepare-temp_housing_data.R
 
 cd ../python
 
-python main
-```
+python main/housing_data_analysis_regions.py
 
-*to be completed...*
+cd ../R-code
+
+Rscript --vanilla main/plot-temp_housing_data.R
+```
 
 ## Contributors
 
@@ -211,5 +224,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) f
 
 
 ## References
-[1] Nicola Gnecco, Jonas Peters, Sebastian Engelke, and Niklas Pfister. 2023. "Boosted Control Functions." arXiv Preprint [https://arxiv.org/abs/2310.05805].
+<a id="ref1"></a><a href="#ref1-back">[1]</a>: Nicola Gnecco, Jonas Peters, Sebastian Engelke, and Niklas Pfister. 2023. "Boosted Control Functions." arXiv Preprint [https://arxiv.org/abs/2310.05805].
 
