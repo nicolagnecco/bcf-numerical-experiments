@@ -178,7 +178,6 @@ Rscript --vanilla main/plot-nullspace_sim.R
 
 To run the experiment and produce the figures for the  the California housing dataset, follow these steps. 
 
-1. Preprocess the data.
 ```bash
 cd python
 
@@ -192,10 +191,12 @@ Rscript --vanilla main/prepare-temp_housing_data.R
 
 cd ../python
 
-python main
-```
+python main/housing_data_analysis_regions.py
 
-*to be completed...*
+cd ../R-code
+
+Rscript --vanilla main/plot-temp_housing_data.R
+```
 
 ## Contributors
 
