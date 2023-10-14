@@ -176,7 +176,7 @@ Rscript --vanilla main/plot-nullspace_sim.R
 
 ### California housing dataset
 
-To run the experiment and produce the figures for the  the California housing dataset, follow these steps. 
+To run the experiment and produce the figures for the California housing dataset, follow these steps. 
 
 ```bash
 cd python
