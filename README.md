@@ -103,8 +103,7 @@ Rscript --vanilla main/dependencies.R
 
 **1a) How to run on a PBS/TORQUE cluster:**
 
-- Open [`./python/main/run_job.sh`](./python/main/run_job.sh) <a href="https://www.example.com" target="_blank" rel="noopener noreferrer">`Visit Example.com`</a>
- and modify lines 29–31 depending on your cluster.
+- Open [`./python/main/run_job.sh`](./python/main/run_job.sh) and modify lines 29–31 depending on your cluster.
 - From the root of the project, in the terminal type the following:
 ```bash
 cd python
