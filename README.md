@@ -26,8 +26,7 @@ The goal of this repository is to reproduce the numerical experiments from [1].
 │       └── prism_temp  # Temperature data 
 |
 ├── python
-│   ├── configs
-│   ├── main
+│   ├── main            # Python scripts
 │   └── src             
 │       ├── bcf         # Classes and functions for BCF
 │       ├── scenarios   # Functions to generate data
@@ -58,7 +57,7 @@ pip --version
 If you don't have Python or pip installed, please [download Python](https://www.python.org/downloads/) and install it. Pip is included in Python versions 3.4+.
 
 2. **Navigate to python directory:**
-Use the terminal to navigate to the directory containing your `requirements.txt `file.
+Use the terminal to navigate to the directory containing your [`requirements.txt`](./python/requirements.txt) file.
 ```bash
 cd python
 ```
@@ -71,8 +70,8 @@ pip install -r requirements.txt
 pip install -e . 
 ```
 
-The first line will install all the Python packages listed in `requirements.txt`. 
-The second line will install the python code located in `./python/src/` as a package.
+The first line will install all the Python packages listed in [`requirements.txt`](./python/requirements.txt). 
+The second line will install the python code located in [`./python/src/`](./python/src/) as a package.
 
 :warning: Consider [creating a new Python environment](https://conda.io/projects/conda/en/latest/user-guide/getting-started.html) before installing the Python packages.
 
@@ -85,7 +84,7 @@ R --version
 If you don't have R installed please [download R](https://cran.rstudio.com/) and install it.
 
 2. **Install the requirements:**
-Move to the R-code directory and launch the R script `dependencies.R` by running in the terminal:
+Move to the R-code directory and launch the R script [`dependencies.R`](./R-code/main/dependencies.R) by running in the terminal:
 ```bash
 cd R-code
 Rscript --vanilla main/dependencies.R
@@ -104,7 +103,7 @@ Rscript --vanilla main/dependencies.R
 
 **1a) How to run on a PBS/TORQUE cluster:**
 
-- Open `./python/main/run_job.sh` and modify lines 29–31 depending on your cluster.
+- Open [`./python/main/run_job.sh`](./python/main/run_job.sh) and modify lines 29–31 depending on your cluster.
 - From the root of the project, in the terminal type the following:
 ```bash
 cd python
@@ -114,7 +113,7 @@ qsub main/run_job.sh "python main/experiment_1.py"
 
 **1b) How to run locally**
 
-- Open `./python/main/experiment_1.py` and on line 13 set the number of cores according to your machine, e.g., `N_WORKERS = 4`.
+- Open  [`./python/main/experiment_1.py`](./python/main/experiment_1.py) and on line 13 set the number of cores according to your machine, e.g., `N_WORKERS = 4`.
 
 - From the root of the project, in the terminal type the following:
 ```bash
@@ -123,7 +122,7 @@ cd python
 python main/experiment_1.py
 ```
 
-:bulb: To run only a few iterations of the experiment, change the setting on line 29 of `./python/main/experiment_1.py`, e.g.,  `"n_reps": range(2)`.
+:bulb: To run only a few iterations of the experiment, change the number of repetitions on line 29 of [`./python/main/experiment_1.py`](./python/main/experiment_1.py), e.g.,  `"n_reps": range(2)`.
 
 
 **2) Plot results**
@@ -142,7 +141,7 @@ Rscript --vanilla main/plot-interv_sim.R
 
 **1a) How to run on a PBS/TORQUE cluster:**
 
-- Open `./python/main/run_job.sh` and modify lines 29–31 depending on your cluster.
+- Open [`./python/main/run_job.sh`](./python/main/run_job.sh) and modify lines 29–31 depending on your cluster.
 - From the root of the project, in the terminal type the following:
 ```bash
 cd python
@@ -152,7 +151,7 @@ qsub main/run_job.sh "python main/experiment_2.py"
 
 **1b) How to run locally**
 
-- Open `./python/main/experiment_2.py` and on line 13 set the number of cores according to your machine, e.g., `N_WORKERS = 4`.
+- Open [`./python/main/experiment_2.py`](./python/main/experiment_2.py) and on line 13 set the number of cores according to your machine, e.g., `N_WORKERS = 4`.
 
 - From the root of the project, in the terminal type the following:
 ```bash
@@ -161,7 +160,7 @@ cd python
 python main/experiment_2.py
 ```
 
-:bulb: To run only a few iterations of the experiment, change the setting on line 31 of `./python/main/experiment_2.py`, e.g.,  `"n_reps": range(2)`.
+:bulb: To run only a few iterations of the experiment, change the number of repetitions on line 31 of [`./python/main/experiment_2.py`](./python/main/experiment_2.py), e.g.,  `"n_reps": range(2)`.
 
 
 **2) Plot results**
