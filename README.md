@@ -2,6 +2,19 @@
 
 The goal of this repository is to reproduce the numerical experiments from [1].
 
+If you use this software in your work, please cite it using the following metadata.
+
+```bibtex
+@misc{gnecco2023boosted,
+      title={Boosted Control Functions}, 
+      author={Nicola Gnecco and Jonas Peters and Sebastian Engelke and Niklas Pfister},
+      year={2023},
+      eprint={2310.05805},
+      archivePrefix={arXiv},
+      primaryClass={stat.ML}
+}
+```
+
 ## Table of Contents
 - [Directory Structure](#directory-structure)
 - [Dependencies](#dependencies)
