@@ -1,6 +1,6 @@
 # Boosted Control Functions – Numerical experiments
 
-The goal of this repository is to reproduce the numerical experiments from [1].
+The goal of this repository is to reproduce the numerical experiments from <a href="#ref1">[1]</a><a id="ref1-back"></a>.
 
 If you use this software in your work, please cite it using the following metadata.
 
@@ -224,5 +224,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) f
 
 
 ## References
-[1] Nicola Gnecco, Jonas Peters, Sebastian Engelke, and Niklas Pfister. 2023. "Boosted Control Functions." arXiv Preprint [https://arxiv.org/abs/2310.05805].
+<a id="ref1"></a><a href="#ref1-back">[1]</a>: Nicola Gnecco, Jonas Peters, Sebastian Engelke, and Niklas Pfister. 2023. "Boosted Control Functions." arXiv Preprint [https://arxiv.org/abs/2310.05805].
 
