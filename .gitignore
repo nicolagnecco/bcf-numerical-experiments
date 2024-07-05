@@ -1,10 +1,8 @@
 # Taken from: https://github.com/github/gitignore
 
-# ignore processed data
+# ignore processed data but keep the folder
 data/processed/*
-
-# ignore results
-results/*
+!data/processed/.gitkeep
 
 # ignore error logs
 *.err
@@ -171,8 +169,13 @@ MANIFEST
 # Vscode
 .vscode
 
+# Ignore results but not the folders
+results/*
+!results/figures/.gitkeep
+!results/output_data/.gitkeep
 
-# Don't ignore .gitkeep
-!results/figures
-!results/output_data
-!data/processed/.gitkeep
+# Add final results
+!results/output_data/experiment_1-bcf.csv
+!results/output_data/experiment_2-nullspace.csv
+!results/output_data/test_mse.csv
+!results/output_data/training_mse.csv
