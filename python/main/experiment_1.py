@@ -3,8 +3,8 @@ from functools import partial
 
 import numpy as np
 import src.simulations.psweep as ps
+from src.algorithms.oracle_methods import CausalFunction, ConstantFunc, IMPFunction
 from src.bcf.boosted_control_function_2 import BCF, OLS
-from src.simulations.oracle_methods import CausalFunction, ConstantFunc, IMPFunction
 from src.simulations.parameter_grids import full_grid
 from src.simulations.simulations_funcs import run_simulation
 
