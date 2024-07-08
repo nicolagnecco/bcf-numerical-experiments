@@ -84,7 +84,7 @@ def main():
     counter = 0
 
     # %% for each response variable
-    for gene in gene_data.columns[:]:
+    for gene in gene_data.columns[:1]:
         counter += 1
         print(f"Processing {counter}/{len(gene_data.columns)}: {gene}")
 
@@ -113,13 +113,13 @@ def main():
             # %% for each algorithm
             for algo_name, algo in algorithms[:]:
                 # fit algo
-                algo.fit(X_train, y_train.to_numpy().ravel(), Z_train_enc)
+                algo.fit(X_train.to_numpy(), y_train.to_numpy().ravel(), Z_train_enc)
 
                 # predict algo on both training and test
-                y_train_pred = algo.predict(X_train)
+                y_train_pred = algo.predict(X_train.to_numpy())
                 mse_train = compute_mse(y_train.to_numpy().ravel(), y_train_pred)
 
-                y_test_pred = algo.predict(X_test)
+                y_test_pred = algo.predict(X_test.to_numpy())
                 mse_test = compute_mse(y_test.to_numpy().ravel(), y_test_pred)
 
                 # %% append results

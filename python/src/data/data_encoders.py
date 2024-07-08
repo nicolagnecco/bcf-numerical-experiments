@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 
 
-def prepare_Z(Z):
+def prepare_Z(Z) -> np.ndarray:
     """
     Encodes categorical columns of Z using OneHotEncoder if they are not numeric.
 
@@ -25,11 +25,11 @@ def prepare_Z(Z):
             # Fit and transform the categorical columns
             Z_encoded = encoder.fit_transform(Z[categorical_features])
             # Drop original categorical columns and concatenate the encoded ones
-            Z = np.hstack((Z.drop(columns=categorical_features).values, Z_encoded))
+            Z_ = np.hstack((Z.drop(columns=categorical_features).values, Z_encoded))
     elif isinstance(Z, np.ndarray):
         # Assuming Z is already prepared if it's an ndarray
-        pass
+        Z_ = Z
     else:
         raise ValueError("Z must be a pandas DataFrame or a numpy ndarray.")
 
-    return Z
+    return Z_
