@@ -227,7 +227,7 @@ def select_obs_but_in(X, Y, Z, env_name) -> NDArray[np.bool_]:
     return row_mask
 
 
-def select_obs_in_training_support(X, Y, Z) -> NDArray[np.bool_]:
+def select_obs_in_training_support(X, Y, Z, low_quantile) -> NDArray[np.bool_]:
     """
     Selects training observations in the support of "non-targeting" data
     """
@@ -237,7 +237,7 @@ def select_obs_in_training_support(X, Y, Z) -> NDArray[np.bool_]:
     non_targeting_X = X[non_targeting_mask]
 
     # Compute range of X in "non-targeting" environment
-    min_values = non_targeting_X.min()
+    min_values = non_targeting_X.quantile(q=low_quantile)
     max_values = non_targeting_X.max()
 
     # Initialize training mask to include all "non-targeting" obs
@@ -306,8 +306,9 @@ if __name__ == "__main__":
     )
 
     # %% try train-test split in training support
+    train_test_splitter = partial(select_obs_in_training_support, low_quantile=0)
     X_train, Y_train, Z_train, X_test, Y_test, Z_test = test_train_split(
-        X_, Y_, Z_, "Z", select_obs_in_training_support
+        X_, Y_, Z_, "Z", train_test_splitter
     )
 
     # %% try pipeline
@@ -322,7 +323,7 @@ if __name__ == "__main__":
     X_, y_, Z_ = subset_data(response_gene, X, Z, preds, envs)
 
     X_train, y_train, Z_train, X_test, y_test, Z_test = test_train_split(
-        X_, y_, Z_, "Z", select_obs_in_training_support
+        X_, y_, Z_, "Z", train_test_splitter
     )
 
 
