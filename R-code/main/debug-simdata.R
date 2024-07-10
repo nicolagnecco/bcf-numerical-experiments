@@ -3,7 +3,7 @@ library(tidyverse)
 
 # Import data
 dat <- read_csv(
-  "../results/check_data/20240710-190218/data_2.csv"
+  "../results/check_data/20240710-225612/data_4.csv"
 )
 
 # Look how predictions look like

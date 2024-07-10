@@ -11,8 +11,8 @@ from src.algorithms.oracle_methods import ConstantFunc
 from src.bcf.boosted_control_function_2 import BCF, OLS
 from xgboost.sklearn import XGBRegressor
 
-# Purpose: Check how data looks like
-base_model = LinearRegression()  # RandomForestRegressor(n_estimators=20)
+# Purpose: Do we do better than OLS in simulated data using XGB?
+base_model = XGBRegressor()  # RandomForestRegressor(n_estimators=20)
 
 
 # Runs
@@ -31,16 +31,16 @@ OUTPUT_CONFIG = "configs.py"
 # Data
 n = 1000
 p = 10
-p_effective = 1
-tree_depth = 1
-r = 1
+p_effective = 3
+tree_depth = 3
+r = 5
 interv_strength = 10
 gamma_norm = 1.5
-sd_y = 0.0
+sd_y = 0.1
 
 n_sims = 10
 
-SEED = 1057  # from https://www.random.org/integers
+SEED = 5023  # from https://www.random.org/integers
 
 
 # Algorithms

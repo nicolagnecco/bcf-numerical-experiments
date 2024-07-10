@@ -2,7 +2,7 @@ library(tidyverse)
 
 
 # import data
-res <- read_csv("../results/check_data/20240710-190218/res.csv")
+res <- read_csv("../results/check_data/20240710-225419/res.csv")
 
 ggplot(res) +
   geom_boxplot(aes(x = factor(algorithm), 
