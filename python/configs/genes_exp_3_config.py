@@ -20,7 +20,7 @@ LAST_GENE = 23
 
 # Paths
 INPUT_DATA = "../data/processed/genes.csv"
-INPUT_CONFIG = "configs/genes_exp_2_config.py"
+INPUT_CONFIG = "configs/genes_exp_3_config.py"
 RESULT_DIR = "../results/output_data/"
 RESULT_NAME = "causalbench-res.csv"
 DATA_NAME = "causalbench-data.csv"
@@ -32,11 +32,13 @@ QUANTILE_THRES = 0.025
 N_OBS_SUBSAMPLED = 1000
 N_TOP_PREDS = 3
 N_TOP_ENVS = 3
-START_ENV = 1
+START_ENV = 2
+N_ENVS_IN_TRAIN_LO = 0
+N_ENVS_IN_TRAIN_HI = 1
 PRED_SELECTOR = partial(
     ds.select_top_predictors, n_top_pred=N_TOP_PREDS, environment_column="Z"
 )
-SEED = 1057  # from https://www.random.org/integers
+SEED = 1059  # from https://www.random.org/integers
 
 
 # Algorithms

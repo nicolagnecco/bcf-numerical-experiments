@@ -3,7 +3,7 @@ import os
 import shutil
 from functools import partial
 
-import configs.genes_exp_2_config as cfg
+import configs.genes_exp_3_config as cfg
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -56,7 +56,8 @@ def main():
 
             # train-test split
             train_test_splitter = partial(
-                ds.select_obs_in_observational_support, low_quantile=cfg.QUANTILE_THRES
+                ds.select_obs_from_envs,
+                envs=envs[cfg.N_ENVS_IN_TRAIN_LO : cfg.N_ENVS_IN_TRAIN_HI],
             )
             X_train, y_train, Z_train, X_test, y_test, Z_test = ds.test_train_split(
                 X_, y_, Z_, "Z", train_test_splitter

@@ -3,11 +3,12 @@ import os
 import shutil
 from functools import partial
 
-import configs.genes_exp_2_config as cfg
+import configs.genes_exp_4_config as cfg
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import src.data.data_selectors as ds
+from scipy.stats import pearsonr
 from src.data.data_encoders import prepare_Z
 from src.simulations.simulations_funcs import compute_mse
 from src.utils.utils import (
@@ -31,10 +32,14 @@ def main():
     idx_observational = np.where(data[["Z"]] == "non-targeting")[0]
     idx_interventional = np.where(data[["Z"]] != "non-targeting")[0]
     idx_subsample_obs = rng.choice(idx_observational, cfg.N_OBS_SUBSAMPLED)
-    gene_data = data.iloc[np.concatenate([idx_subsample_obs, idx_interventional])].drop(
-        columns=["Z"]
-    )
-    env_data = data.iloc[np.concatenate([idx_subsample_obs, idx_interventional])][["Z"]]
+    gene_data_full = data.drop(columns=["Z"])
+    env_data_full = data[["Z"]]
+    gene_data = gene_data_full.iloc[
+        np.concatenate([idx_subsample_obs, idx_interventional])
+    ]
+    env_data = env_data_full.iloc[
+        np.concatenate([idx_subsample_obs, idx_interventional])
+    ]
 
     results = []
     counter = 0
@@ -50,8 +55,10 @@ def main():
             # select predictor genes and environment genes
             env_selector = partial(ds.select_top_environments, n_top_env=e)
             preds, envs = ds.select_genes(
-                gene, gene_data, env_data, cfg.PRED_SELECTOR, env_selector
+                gene, gene_data_full, env_data_full, cfg.PRED_SELECTOR, env_selector
             )
+
+            # subset data
             X_, y_, Z_ = ds.subset_data(gene, gene_data, env_data, preds, envs)
 
             # train-test split
@@ -79,6 +86,7 @@ def main():
                 mse_test = compute_mse(y_test.to_numpy().ravel(), y_test_pred)
 
                 # %% append results
+                p = X_train.shape[1]
                 results.append(
                     {
                         "gene": gene,
@@ -86,6 +94,10 @@ def main():
                         "algorithm": algo_name,
                         "mse_train": mse_train,
                         "mse_test": mse_test,
+                        "cor_low": pearsonr(X_train.iloc[:, p - 1], y_train.iloc[:, 0])[
+                            0
+                        ],
+                        "cor_hi": pearsonr(X_train.iloc[:, 0], y_train.iloc[:, 0])[0],
                     }
                 )
 
