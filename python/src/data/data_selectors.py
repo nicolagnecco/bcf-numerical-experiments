@@ -5,7 +5,7 @@ from typing import Callable, List, Tuple
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, rankdata
 
 
 def subset_data(
@@ -222,12 +222,21 @@ def select_obs_but_in(X, Y, Z, env_name) -> NDArray[np.bool_]:
     Selects training observations that are not in `env_name`
     """
 
-    # Example: Select all rows from the observational setting, i.e., "non-targeting"
+    # Example: Select all rows not in env_name
     row_mask = Z != env_name
     return row_mask
 
 
-def select_obs_in_training_support(X, Y, Z, low_quantile) -> NDArray[np.bool_]:
+def select_obs_from_envs(X, Y, Z, envs):
+    """
+    Selects training observations that are "non-targeting" or in envs
+    """
+
+    row_mask = np.isin(Z, ["non-targeting"] + envs)
+    return row_mask
+
+
+def select_obs_in_observational_support(X, Y, Z, low_quantile) -> NDArray[np.bool_]:
     """
     Selects training observations in the support of "non-targeting" data
     """
@@ -236,19 +245,32 @@ def select_obs_in_training_support(X, Y, Z, low_quantile) -> NDArray[np.bool_]:
     non_targeting_mask = (Z == "non-targeting").values
     non_targeting_X = X[non_targeting_mask]
 
+    # Initialize training mask to include all "non-targeting" obs
+    train_mask = non_targeting_mask.copy()
+
     # Compute range of X in "non-targeting" environment
     min_values = non_targeting_X.quantile(q=low_quantile)
     max_values = non_targeting_X.max()
 
-    # Initialize training mask to include all "non-targeting" obs
-    train_mask = non_targeting_mask.copy()
+    # Compute list of non-observational envs
+    envs = np.unique(Z)[np.unique(Z) != "non-targeting"]
 
-    # Create a combined mask for range condition across all columns
-    range_mask = np.ones(len(X), dtype=bool)
-    for column in X.columns:
-        range_mask &= (X[column] >= min_values[column]) & (
-            X[column] <= max_values[column]
-        )
+    range_mask = np.zeros(len(X), dtype=bool)
+    for env in envs:
+        # keep observations (rows) where environment = env
+        env_mask = (Z == env).values
+
+        # keep observations (rows) where gene X[env] is larger than the threshold
+        quantile_mask = (X[env] > min_values[env]).values
+
+        # keep 10 observations (rows) of the gene X[env] in environment = env
+        env_data = X[env_mask][env]
+        top_indices = env_data.nlargest(10).index
+        top_row_mask = X.index.isin(top_indices)
+
+        range_mask |= (env_mask & quantile_mask) | top_row_mask
+
+        # print(np.sum( (env_mask & quantile_mask) | top_row_mask))
 
     # Combine the non-targeting mask with the range mask
     train_mask |= range_mask
@@ -261,7 +283,7 @@ def select_obs_in_training_support(X, Y, Z, low_quantile) -> NDArray[np.bool_]:
 if __name__ == "__main__":
 
     # %% testing subset_data
-    output_path = "../../data/processed/genes.csv"
+    output_path = "../data/processed/genes.csv"
     environment_column = "Z"
     response_gene = "ENSG00000122406"
     predictor_genes = ["ENSG00000144713", "ENSG00000174748"]
@@ -306,7 +328,7 @@ if __name__ == "__main__":
     )
 
     # %% try train-test split in training support
-    train_test_splitter = partial(select_obs_in_training_support, low_quantile=0)
+    train_test_splitter = partial(select_obs_in_observational_support, low_quantile=0)
     X_train, Y_train, Z_train, X_test, Y_test, Z_test = test_train_split(
         X_, Y_, Z_, "Z", train_test_splitter
     )
