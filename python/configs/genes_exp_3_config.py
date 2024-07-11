@@ -12,11 +12,12 @@ from src.bcf.boosted_control_function_2 import BCF, OLS
 from xgboost.sklearn import XGBRegressor
 
 # Purpose: Try trees with 3 predictors + up to 3 envs + push quantile higher
+base_model = LinearRegression()
 
 # Runs
 TEST_RUN = False
-FIRST_GENE = 22
-LAST_GENE = 23
+FIRST_GENE = 3
+LAST_GENE = 4
 
 # Paths
 INPUT_DATA = "../data/processed/genes.csv"
@@ -29,29 +30,29 @@ OUTPUT_CONFIG = "configs.py"
 
 # Data
 QUANTILE_THRES = 0.025
+N_ENV_TOP = 50
 N_OBS_SUBSAMPLED = 1000
 N_TOP_PREDS = 3
-N_TOP_ENVS = 3
+N_TOP_ENVS = 2
 START_ENV = 2
 N_ENVS_IN_TRAIN_LO = 0
 N_ENVS_IN_TRAIN_HI = 1
 PRED_SELECTOR = partial(
-    ds.select_top_predictors, n_top_pred=N_TOP_PREDS, environment_column="Z"
+    ds.select_top_predictors_lasso, n_top_pred=N_TOP_PREDS, environment_column="Z"
 )
-SEED = 1059  # from https://www.random.org/integers
-
+SEED = 342  # from https://www.random.org/integers
 
 # Algorithms
 BCF_0 = BCF(
     n_exog=0,  # needs to know Z
     continuous_mask=np.repeat(True, 0),  # needs to know X
-    fx=DecisionTreeRegressor(),
-    gv=DecisionTreeRegressor(),
-    fx_imp=DecisionTreeRegressor(),
+    fx=base_model,
+    gv=base_model,
+    fx_imp=base_model,
     passes=2,
 )
 
-OLS_0 = OLS(fx=DecisionTreeRegressor())
+OLS_0 = OLS(fx=base_model)
 
 algorithms = [
     (

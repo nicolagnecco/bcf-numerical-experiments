@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import src.data.data_selectors as ds
 from scipy.stats import pearsonr
+from src.bcf.boosted_control_function_2 import BCF
 from src.data.data_encoders import prepare_Z
 from src.simulations.simulations_funcs import compute_mse
 from src.utils.utils import (
@@ -63,7 +64,9 @@ def main():
 
             # train-test split
             train_test_splitter = partial(
-                ds.select_obs_in_observational_support, low_quantile=cfg.QUANTILE_THRES
+                ds.select_obs_in_observational_support,
+                low_quantile=cfg.QUANTILE_THRES,
+                n_env_top=cfg.N_ENV_TOP,
             )
             X_train, y_train, Z_train, X_test, y_test, Z_test = ds.test_train_split(
                 X_, y_, Z_, "Z", train_test_splitter
@@ -85,6 +88,11 @@ def main():
                 y_test_pred = algo.predict(X_test.to_numpy())
                 mse_test = compute_mse(y_test.to_numpy().ravel(), y_test_pred)
 
+                if isinstance(algo.model, BCF):
+                    M_0 = algo.model.M_0_
+                else:
+                    M_0 = None
+
                 # %% append results
                 p = X_train.shape[1]
                 results.append(
@@ -98,6 +106,7 @@ def main():
                             0
                         ],
                         "cor_hi": pearsonr(X_train.iloc[:, 0], y_train.iloc[:, 0])[0],
+                        "M_0": M_0,
                     }
                 )
 

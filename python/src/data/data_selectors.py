@@ -1,11 +1,12 @@
 # %%
 from functools import partial
-from typing import Callable, List, Tuple
+from typing import Callable, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 from scipy.stats import pearsonr, rankdata
+from sklearn.linear_model import LassoCV
 
 
 def subset_data(
@@ -98,6 +99,65 @@ def default_predictor_selection(
     return predictors
 
 
+def select_top_predictors_lasso(
+    response_gene: str,
+    X: pd.DataFrame,
+    Z: pd.DataFrame,
+    n_top_pred: int,
+    environment_column: str,
+    rng: Optional[Union[int, np.random.RandomState, None]] = None,
+) -> List[str]:
+    """
+    Selects predictor genes based on Lasso
+
+    Parameters:
+    ----------
+    response_gene : str
+        The gene to be used as the response variable.
+    X : pd.DataFrame
+        DataFrame containing the dataset with genes as columns.
+    Z : pd.DataFrame
+        DataFrame containing the dataset with the environment column. This is not used in this function.
+    n_top_pred: int
+        The number of top predictors to select
+    environment_column: str
+        Name of the environment column in `Z`
+
+    Returns:
+    -------
+    List[str]
+        List of predictor genes that are most correlated with the response variable in the observational data.
+    """
+    # Extract the response variable data
+    row_mask = Z[environment_column] == "non-targeting"
+    y = X[row_mask][response_gene]
+    predictors = X[row_mask].drop(columns=[response_gene])
+
+    # Initialize LassoCV model
+    lasso = LassoCV(cv=5, random_state=rng)
+
+    # Fit Lasso model
+    lasso.fit(predictors, y)
+
+    # Get coefficients path
+    coefficients = lasso.coef_
+    predictor_names = predictors.columns
+
+    # Extract non-zero coefficients and their corresponding predictor names
+    non_zero_mask = coefficients != 0
+    non_zero_coefficients = coefficients[non_zero_mask]
+    non_zero_predictors = predictor_names[non_zero_mask]
+
+    # Sort predictors by absolute strength
+    sorted_indices = np.argsort(-np.abs(non_zero_coefficients))
+    sorted_predictors = non_zero_predictors[sorted_indices]
+
+    # Select the top predictors based on sorted list
+    top_predictors = sorted_predictors[:n_top_pred]
+
+    return top_predictors.to_list()
+
+
 def select_top_predictors(
     response_gene: str,
     X: pd.DataFrame,
@@ -147,6 +207,55 @@ def select_top_predictors(
     return top_predictors
 
 
+def select_bottom_predictors(
+    response_gene: str,
+    X: pd.DataFrame,
+    Z: pd.DataFrame,
+    n_top_pred: int,
+    environment_column: str,
+) -> List[str]:
+    """
+    Selects predictor genes based on their correlation with the response variable.
+
+    Parameters:
+    ----------
+    response_gene : str
+        The gene to be used as the response variable.
+    X : pd.DataFrame
+        DataFrame containing the dataset with genes as columns.
+    Z : pd.DataFrame
+        DataFrame containing the dataset with the environment column. This is not used in this function.
+    n_top_pred: int
+        The number of top predictors to select
+    environment_column: str
+        Name of the environment column in `Z`
+
+    Returns:
+    -------
+    List[str]
+        List of predictor genes that are most correlated with the response variable in the observational data.
+    """
+    # Extract the response variable data
+    row_mask = Z[environment_column] == "non-targeting"
+    y = X[row_mask][response_gene]
+
+    # Calculate the correlation of each predictor with the response variable
+    correlations = {}
+    for predictor in X.columns:
+        if predictor != response_gene:
+            correlation, _ = pearsonr(X[row_mask][predictor], y)
+            correlations[predictor] = abs(
+                correlation
+            )  # Use absolute value to consider both positive and negative correlations
+
+    # Select the top predictors with the highest absolute correlations
+    bottom_predictors = sorted(
+        correlations, key=lambda pred: correlations[pred], reverse=False
+    )[:n_top_pred]
+
+    return bottom_predictors
+
+
 def default_environment_selection(
     response_gene: str, X: pd.DataFrame, Z: pd.DataFrame, preds: List[str]
 ) -> List[str]:
@@ -157,6 +266,18 @@ def default_environment_selection(
     # Example: Select first preds as environment variables + observational data
     environment_genes = preds[:1]
     return environment_genes + ["non-targeting"]
+
+
+def select_environment_e(
+    response_gene: str, X: pd.DataFrame, Z: pd.DataFrame, preds: List[str], e: int
+) -> List[str]:
+    """
+    Selects environment "non-targeting" + preds[e].
+    """
+
+    # Example: Select e-th preds as environment variables + observational data
+    environment_genes = preds[e]
+    return [environment_genes] + ["non-targeting"]
 
 
 def all_environment_selection(
@@ -236,7 +357,9 @@ def select_obs_from_envs(X, Y, Z, envs):
     return row_mask
 
 
-def select_obs_in_observational_support(X, Y, Z, low_quantile) -> NDArray[np.bool_]:
+def select_obs_in_observational_support(
+    X, Y, Z, low_quantile, n_env_top=10
+) -> NDArray[np.bool_]:
     """
     Selects training observations in the support of "non-targeting" data
     """
@@ -263,9 +386,9 @@ def select_obs_in_observational_support(X, Y, Z, low_quantile) -> NDArray[np.boo
         # keep observations (rows) where gene X[env] is larger than the threshold
         quantile_mask = (X[env] > min_values[env]).values
 
-        # keep 10 observations (rows) of the gene X[env] in environment = env
+        # keep n_env_top observations (rows) of the gene X[env] in environment = env
         env_data = X[env_mask][env]
-        top_indices = env_data.nlargest(10).index
+        top_indices = env_data.nlargest(n_env_top).index
         top_row_mask = X.index.isin(top_indices)
 
         range_mask |= (env_mask & quantile_mask) | top_row_mask
@@ -303,7 +426,10 @@ if __name__ == "__main__":
     all_environment_selection("ENSG00000122406", genes, Z, preds)
 
     # %% testing select_top_predictors
-    top_preds = select_top_predictors(response_gene, X, Z, 10, "Z")
+    top_preds = select_top_predictors(response_gene, X, Z, 5, "Z")
+
+    # %% testing select_top_predictors_lasso
+    top_preds_lasso = select_top_predictors_lasso(response_gene, X, Z, 5, "Z")
 
     # %% testing select_top_env
     select_top_environments(response_gene, X, Z, top_preds, 3)
