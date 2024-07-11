@@ -3,8 +3,12 @@ library(tidyverse)
 
 # Import data
 dat <- read_csv(
-  "../results/check_data/20240710-225612/data_4.csv"
+  "../results/check_data/20240711-111238/data_0.csv"
 )
+
+# Look how the covariate space looks like
+ggplot(dat) +
+  geom_point(aes(x = X1, y = X2, col = set), alpha = .1)
 
 # Look how predictions look like
 ggplot(dat %>% filter(set %in% c("train", "test"))) +
