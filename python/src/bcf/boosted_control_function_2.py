@@ -47,6 +47,9 @@ class BCF(BaseEstimator):
     alphas : array-like, default=10 ** np.arange(-5.0, 6.0)
         List of alpha parameters for grid search to estimate the matrix M_0.
 
+    verbose: bool, default=False
+        Whether to print progress bar during fitting.
+
     Attributes:
     ----------
     M_0_ : ndarray
@@ -97,6 +100,7 @@ class BCF(BaseEstimator):
     fx_imp: ModelRegressor = RandomForestRegressor()
     gv: ModelRegressor = LinearRegression(fit_intercept=False)
     alphas = 10 ** np.arange(-5.0, 6.0)
+    verbose: bool = False
 
     def __post_init__(self):
         """Initialization steps post object instantiation."""
@@ -165,7 +169,7 @@ class BCF(BaseEstimator):
         f_X = np.mean(y)
 
         # Step 1
-        for k in tqdm(range(self.passes)):
+        for k in tqdm(range(self.passes), disable=not (self.verbose)):
             # Fit linear model using V
             y_ = y - f_X
             self.gv_.fit(V, y_)
