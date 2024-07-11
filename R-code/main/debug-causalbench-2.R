@@ -3,55 +3,63 @@ library(tidyverse)
 
 # Import data
 dat <- read_csv(
-  "../results/output_data/20240710-190751/causalbench-data_ENSG00000083845.csv"
+  "../results/output_data/20240711-190321/causalbench-data_ENSG00000109475.csv"
 )
 
-ENV <- 1
-
-datsubsamp <- bind_rows(
-  dat %>% filter(Z == "non-targeting") %>% group_by(environment, algorithm) %>% slice_sample(n = 1000),
-  dat %>% filter(Z != "non-targeting")
-) %>% 
-  mutate(setenv = paste(Z, set, sep = "-"))
-
-genes <- colnames(datsubsamp)[1:6]
+genes <- colnames(dat)[1:6]
 
 # Constants for gene column names
-GENE_A <- genes[2]
-GENE_B <- genes[1]
+gene_x1 <- genes[2]
+gene_y <- genes[1]
+
+# Look at fits
+fitlm <- lm(ENSG00000138326 ~ ENSG00000231500 + ENSG00000144713 + ENSG00000161970,
+            data = dat %>% filter(set == "train"))
+summary(fitlm)
+
+plot(dat$ENSG00000231500, dat$ENSG00000138326)
+points(dat$ENSG00000231500, predict(fitlm, newdata = dat), col = "green")
 
 # Look how many training samples are non-observational
-dat2plot <- datsubsamp %>% 
-  filter(environment == 1)
-
-X <- dat2plot %>% ungroup() %>% filter(Z == "non-targeting") %>% select(2:3)
-
-apply(X, MARGIN = 2, function(x){quantile(x, probs = .0)})
+dat2plot <- dat %>% filter(environment == 0, n_env_top == 20)
 
 ggplot(dat2plot) +
-  geom_point(aes(x = !!sym(GENE_A), y = !!sym(GENE_B), col = Z), alpha = 0.1) +
-  geom_point(aes(x = !!sym(GENE_A), y = !!sym(GENE_B)), col = "red",
-             data = dat2plot %>% filter(Z != "non-targeting", set == "train"))
+  geom_point(aes(x = !!sym(gene_x1), y = !!sym(gene_y), col = Z), alpha = 0.1) +
+  geom_point(aes(x = !!sym(gene_x1), y = !!sym(gene_y)), col = "red",
+             data = dat2plot %>% filter(Z != "non-targeting", set == "train")) +
+  coord_fixed()
 
 # Look train-test split
-dat2plot <- datsubsamp %>% 
-  filter(environment == 1)
+dat2plot <- dat %>% filter(environment == 0, n_env_top == 20)
 
 ggplot(dat2plot) +
-  geom_point(aes(x = !!sym(GENE_A), y = !!sym(GENE_B), col = set), alpha = 0.1) +
-  xlim(c(0, 6)) +
-  ylim(c(0, 5))
+  geom_point(aes(x = !!sym(gene_x1), y = !!sym(gene_y), col = set), alpha = 0.1) +
+  coord_equal()
 
 # Look how predictions look like
-ggplot(dat %>% filter(set %in% c("test", "train"))) +
+ggplot(dat %>% filter(set %in% c("train", "test"), n_env_top == 20)) +
   facet_grid(environment ~ algorithm) +
-  geom_point(aes(x = !!sym(GENE_A), y = !!sym(GENE_B))) +
-  geom_point(aes(x = !!sym(GENE_A), y = y_pred, col = algorithm))
+  geom_point(aes(x = !!sym(genes[3]), y = !!sym(gene_y))) +
+  geom_point(aes(x = !!sym(genes[3]), y = y_pred, col = algorithm)) +
+  coord_cartesian(xlim = c(0, 5))
+
+
+# Look at covariate space
+ggplot(dat %>% filter(environment == 2)) +
+  geom_point(aes(x = !!sym(gene_x1), y = !!sym(genes[3]), col = Z)) +
+  geom_point(aes(x = !!sym(gene_x1), y = !!sym(genes[3])), col = "red",
+             data = dat %>% filter(Z != "non-targeting", set == "train")) 
+
+X_reg <- dat %>% filter(set %in% c("train")) %>% select(genes[2:4], Z)
+
+lm(ENSG00000149273 ~ Z, data = X_reg)
+
+mean(X_reg$ENSG00000149273)
 
 # Compute mses
 dat_mses <- dat %>% 
-  group_by(environment, algorithm, set) %>%
-  summarise(mse = mean((!!sym(GENE_B) - y_pred)^2), .groups = 'drop')
+  group_by(environment, algorithm, n_env_top, set) %>%
+  summarise(mse = mean((!!sym(gene_y) - y_pred)^2), .groups = 'drop')
 
 ggplot(dat_mses) +
   facet_wrap(~ set) +
