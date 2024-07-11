@@ -170,6 +170,7 @@ def generate_data_Z_Gaussian(
     mean_X: float = 0.0,
     eigengap: float = 1.0,
     seed: Optional[Union[int, SeedSequence, BitGenerator, Generator]] = None,
+    hard_intervention: Optional[bool] = False,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -257,6 +258,7 @@ def generate_data_Z_Gaussian(
     - Z_train: np.ndarray of environments,
     - f_train, f_test: np.ndarray of causal function.
     """
+    # TODO: update doc about intervention
 
     rng = np.random.default_rng(seed)
 
@@ -289,6 +291,8 @@ def generate_data_Z_Gaussian(
 
     V_test = sample_Gaussian(n=n, ndims=p, S=S, seed=rng)
     Z_test = mean_Z + sample_Gaussian(n=n, ndims=r, S=W, seed=rng)
+    if hard_intervention:
+        Z_test = np.ones(shape=Z_test.shape)
     noise_test = rng.normal(scale=sd_y, size=n)
     X_test = mean_X + interv_strength * Z_test @ M.T + V_test
     f_test = f_.predict(X_test[:, range(p_effective)])

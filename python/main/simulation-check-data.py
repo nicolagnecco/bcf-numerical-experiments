@@ -59,6 +59,7 @@ def main():
             gamma_norm=cfg.gamma_norm,
             sd_y=cfg.sd_y,
             seed=rng,
+            hard_intervention=cfg.hard_intervention,
         )
         # encode Z
         Z_train_enc = prepare_Z(Z_train)
