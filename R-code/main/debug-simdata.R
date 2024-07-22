@@ -3,7 +3,7 @@ library(tidyverse)
 
 # Import data
 dat <- read_csv(
-    "../results/check_data/20240722-125309/data_0.csv"
+    "../results/check_data/20240722-163230/data_0.csv"
 )
 
 # Look how the covariate space looks like
@@ -11,12 +11,16 @@ ggplot(dat) +
     geom_point(aes(x = X1, y = X2, col = set), alpha = .1)
 
 # Look how predictions look like
-ggplot(dat %>% filter(set %in% c("train", "test"))) +
+dat2plot <- dat %>% 
+  filter(set %in% c("train", "test")) %>% 
+  filter(interv_strength == 3)
+
+ggplot(dat2plot) +
     # facet_grid(set ~ .) +
     geom_point(aes(x = X1, y = y, col = set), alpha = .1)
 
 
-ggplot(dat %>% filter(set %in% c("test", "train"))) +
+ggplot(dat2plot) +
     facet_grid(set ~ algorithm) +
     geom_point(aes(x = X1, y = y)) +
     geom_point(aes(x = X1, y = y_pred, col = algorithm))

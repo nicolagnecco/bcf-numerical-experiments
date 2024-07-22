@@ -2,10 +2,10 @@ library(tidyverse)
 
 
 # import data
-res <- read_csv("../results/check_data/20240722-125309/res.csv")
+res <- read_csv("../results/check_data/20240722-163230/res.csv")
 
 ggplot(res) +
-  geom_boxplot(aes(x = factor(algorithm), 
+  geom_boxplot(aes(x = factor(interv_strength), 
                    y = mse_test, 
                    col = factor(algorithm)), outlier.shape = 21) +
   theme_bw() 
