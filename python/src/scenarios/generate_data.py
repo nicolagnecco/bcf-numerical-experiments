@@ -312,3 +312,151 @@ def generate_data_Z_Gaussian(
         S,
         gamma,
     )
+
+
+def generate_data_XYZ_Gaussian(
+    n: int,
+    p: int,
+    p_effective: int,
+    tree_depth: int,
+    r: int,
+    interv_strength: float,
+    gamma_norm: float,
+    sd_y: float,
+    q: Optional[int] = None,
+    mean_Z: float = 0.0,
+    mean_X: float = 0.0,
+    eigengap: float = 1.0,
+    seed: Optional[Union[int, SeedSequence, BitGenerator, Generator]] = None,
+    hard_intervention: Optional[bool] = False,
+) -> Tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+]:
+    """Generate data from a confounded SCM
+
+    Generates training and test data from the following SCM,
+
+        `X = M @ (Z * interv_strength) + V`,
+
+        `y = beta_0 X + gamma @ V + N(0, sd_y^2)`,
+
+    where
+
+    - `X` is the predictor vector,
+    - `y` is the response,
+    - `Z` is the environment vector that follow a joint Gaussian distribution,
+    - `M` is the matrix whose columns are the directions spanned
+     by the environments,
+    - `interv_strength` is the intervention strength along the columns
+     of `M` at test time (at training time is equal to 1),
+    - `V` is the vector of confounders that follow a joint Gaussian distribution,
+    - `beta_0 X ` is the causal function, i.e., a linear function
+     which depends on the first `p_effective` predictors,
+     - `gamma` is the vector that controls how much `V` confounds
+     the predictors and the response
+     - `N(0, sd_y^2)` is the reponse's independent noise term with
+     variance equal to `sd_y^2`.
+
+
+    Parameters
+    ----------
+    n : int
+        The number of observations.
+
+    p : int
+        The number of dimensions.
+
+    p_effective: int
+        The number of dimensions that affect the response variable.
+
+    tree_depth : int
+        The depth of the tree, which controls the complexity of the
+        causal function (higher = more complex).
+
+    r : int
+        The number of columns of the matrix `M` (can think of `r` ~ number of environments).
+
+    interv_strength: float > 0
+        The strength of the intervention. It controls the perturbation
+        of the test observations in the predictor space.
+
+    gamma_norm: float > 0
+        The strength of the confounder. It is expressed as the norm of the `gamma` vector.
+
+    sd_y: float > 0
+        The standard deviation of the response's independent noise term.
+
+     q : int
+        The rank of the matrix `M`.
+
+    seed : {None, int, SeedSequence, BitGenerator, Generator}, optional
+            A seed to initialize the `BitGenerator`. If `None`, then fresh,
+            unpredictable entropy will be pulled from the OS. If an `int`
+            is passed, then it will be passed to `SeedSequence` to derive
+            the initial `BitGenerator` state. One may also pass in a `SeedSequence` instance.
+            Additionally, when passed a `BitGenerator`, it will be wrapped by `Generator`.
+            If passed a `Generator`, it will be returned unaltered.
+
+    Returns
+    -------
+    tuple, made of
+    - X_train, X_test: np.ndarray of predictors,
+    - y_train, y_test: np.ndarray of responses,
+    - Z_train: np.ndarray of environments,
+    - f_train, f_test: np.ndarray of causal function.
+    """
+    # TODO: update doc about intervention
+
+    rng = np.random.default_rng(seed)
+
+    if q is None:
+        q = min(p, r)
+
+    M = generate_random_mat(p=p, r=r, q=q, eigengap=eigengap, seed=rng)
+    W = np.eye(r)
+    S = np.eye(p)
+
+    gamma = generate_orthonormal_vector(ndims=p, seed=rng) * gamma_norm
+    beta0 = 0 * generate_orthonormal_vector(ndims=p_effective, seed=rng)
+
+    V_train = sample_Gaussian(n=n, ndims=p, S=S, seed=rng)
+    Z_train = mean_Z + sample_Gaussian(n=n, ndims=r, S=W, seed=rng)
+    noise_train = rng.normal(scale=sd_y, size=n)
+    X_train = mean_X + Z_train @ M.T + V_train
+    f_train = X_train[:, range(p_effective)] @ beta0
+    y_train = f_train + V_train @ gamma + noise_train
+
+    V_test = sample_Gaussian(n=n, ndims=p, S=S, seed=rng)
+    Z_test = mean_Z + sample_Gaussian(n=n, ndims=r, S=W, seed=rng)
+    if hard_intervention:
+        Z_test = np.ones(shape=Z_test.shape)
+    noise_test = rng.normal(scale=sd_y, size=n)
+    X_test = mean_X + interv_strength * Z_test @ M.T + V_test
+    f_test = X_test[:, range(p_effective)] @ beta0
+    y_test = f_test + V_test @ gamma + noise_test
+
+    return (
+        X_train,
+        X_test,
+        y_train,
+        y_test,
+        Z_train,
+        Z_test,
+        f_train,
+        f_test,
+        beta0,
+        M,
+        S,
+        gamma,
+    )
