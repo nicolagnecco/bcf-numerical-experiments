@@ -49,6 +49,37 @@ def subset_data(
     return X, Y, Z
 
 
+def select_confounders(
+    response_gene: str,
+    X: pd.DataFrame,
+    Z: pd.DataFrame,
+    environment_column: str,
+    predictors: List[str],
+    target_predictor: str,
+    n_confounders: int = 1,
+) -> List[str]:
+
+    # Extract the response variable data
+    row_mask = Z[environment_column] == "non-targeting"
+    X_target = X[row_mask][target_predictor]
+
+    # Calculate the correlation of each predictor with the target predictor
+    correlations = {}
+    for predictor in X.columns:
+        if predictor != response_gene and not (predictor in predictors):
+            correlation, _ = pearsonr(X[row_mask][predictor], X_target)
+            correlations[predictor] = abs(
+                correlation
+            )  # Use absolute value to consider both positive and negative correlations
+
+    # Select the top confounders with the highest absolute correlations
+    top_confounders = sorted(
+        correlations, key=lambda pred: correlations[pred], reverse=True
+    )[:n_confounders]
+
+    return top_confounders
+
+
 def select_genes(
     response_gene: str,
     X: pd.DataFrame,
