@@ -1,3 +1,4 @@
+# %%
 import os
 import shutil
 from concurrent.futures import ProcessPoolExecutor
@@ -17,6 +18,8 @@ from src.utils.utils import (
 )
 from tqdm import tqdm
 
+# %%
+
 
 # Function to process a single gene
 def process_gene(
@@ -27,13 +30,42 @@ def process_gene(
     results = []
 
     for e in range(cfg.N_TOP_PREDS):
+        # print(e)
         env_selector = partial(cfg.ENV_SELECTOR, e=e)
         pred_selector = partial(cfg.PRED_SELECTOR, n_top_pred=cfg.N_TOP_PREDS)
 
         preds, envs = ds.select_genes(
             gene, gene_data_full, env_data_full, pred_selector, env_selector
         )
-        X_, y_, Z_ = ds.subset_data(gene, gene_data, env_data, preds, envs)
+
+        if cfg.ADD_CONFOUNDER:
+            confs = ds.select_confounders(
+                gene, gene_data_full, env_data_full, "Z", preds, preds[e]
+            )
+
+            confs = preds[e : e + 1]
+
+            X_, y_, Z_ = ds.subset_data(gene, gene_data, env_data, preds + confs, envs)
+
+            # set non-targeting observations
+            row_mask = Z_["Z"] == "non-targeting"
+            # add synthetic confounder
+            X_conf = X_[row_mask].iloc[:, -len(confs) :]
+            y_mean_train = y_[row_mask].values.mean()
+            new_y = np.zeros(shape=y_.shape)
+            new_y[row_mask] = y_[row_mask].values + X_conf
+            new_y[~row_mask] = y_[~row_mask].values
+            new_y[row_mask] = new_y[row_mask] * y_mean_train / new_y[row_mask].mean()
+            # new_y[~row_mask] = new_y[~row_mask] * y_mean_train / new_y[~row_mask].mean()
+
+            X_ = X_.iloc[:, : len(preds)]
+            y_ = pd.DataFrame(
+                data=new_y,
+                columns=y_.columns,
+                index=y_.index,
+            )
+        else:
+            X_, y_, Z_ = ds.subset_data(gene, gene_data, env_data, preds, envs)
 
         for n_env_top in [20, 40, 60, 80, 100]:
             train_test_splitter = partial(
@@ -130,6 +162,19 @@ def main():
     env_data = env_data_full.iloc[
         np.concatenate([idx_subsample_obs, idx_interventional])
     ]
+
+    # # sequential debug
+    # for gene in gene_data.columns[cfg.first_gene : cfg.last_gene]:
+    #     print(gene)
+    #     gene = "ENSG00000144713"
+    #     process_gene(
+    #         gene,
+    #         gene_data,
+    #         gene_data_full,
+    #         env_data,
+    #         env_data_full,
+    #         result_dir_timestamp,
+    #     )
 
     # Use ProcessPoolExecutor to process each gene in parallel
     with ProcessPoolExecutor() as executor:

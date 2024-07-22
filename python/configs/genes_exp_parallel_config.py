@@ -13,9 +13,10 @@ from src.bcf.boosted_control_function_2 import BCF, OLS
 from xgboost.sklearn import XGBRegressor
 
 # Purpose: Try to see what happens for increasing intervention strength
-base_model = DecisionTreeRegressor()
-base_model_imp = DecisionTreeRegressor()
-base_model_twicing = LinearRegression()
+base_model = LinearRegression()
+base_model_fx = LinearRegression()
+base_model_gv = LinearRegression()
+base_model_imp = LinearRegression()
 # GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=1)
 
 # Runs
@@ -25,7 +26,7 @@ LAST_GENE = 3
 
 # Paths
 INPUT_DATA = "../data/processed/genes.csv"
-INPUT_CONFIG = "configs/genes_exp_5_config.py"
+INPUT_CONFIG = "configs/genes_exp_parallel_config.py"
 RESULT_DIR = "../results/output_data/"
 RESULT_NAME = "causalbench-res.csv"
 DATA_NAME = "causalbench-data.csv"
@@ -33,20 +34,21 @@ OUTPUT_CONFIG = "configs.py"
 
 
 # Data
+ADD_CONFOUNDER = False
 QUANTILE_THRES = 0.025
 N_OBS_SUBSAMPLED = 1000
 N_TOP_PREDS = 3
 PRED_SELECTOR = partial(ds.select_top_predictors_lasso, environment_column="Z")
 ENV_SELECTOR = ds.select_environment_e
-SEED = 52  # from https://www.random.org/integers
+SEED = 42  # from https://www.random.org/integers
 
 
 # Algorithms
 BCF_0 = BCF(
     n_exog=0,  # needs to know Z
     continuous_mask=np.repeat(True, 0),  # needs to know X
-    fx=base_model_twicing,
-    gv=base_model_twicing,
+    fx=base_model_fx,
+    gv=base_model_gv,
     fx_imp=base_model_imp,
     passes=2,
 )
