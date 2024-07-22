@@ -13,8 +13,10 @@ from src.scenarios.generate_data import generate_data_XYZ_Gaussian
 from xgboost.sklearn import XGBRegressor
 
 # Purpose: How does the data and prediction look like for very large hard inteventions?
-base_model = RandomForestRegressor()  # RandomForestRegressor(n_estimators=20)
-
+base_model = RandomForestRegressor()
+base_model_fx = RandomForestRegressor()
+base_model_gv = LinearRegression()
+base_model_imp = RandomForestRegressor()
 
 # Runs
 TEST_RUN = False
@@ -32,16 +34,16 @@ OUTPUT_CONFIG = "configs.py"
 # Data
 generateData = generate_data_XYZ_Gaussian
 n = 1000
-p = 3
-p_effective = 3
+p = 1
+p_effective = 1
 tree_depth = 3
 r = 1
-interv_strength = 10
+interv_strength = [0, 3, 5, 10]
 gamma_norm = 2
-sd_y = 0.0
+sd_y = 0.1
 hard_intervention = True
 
-n_sims = 10
+n_sims = 1
 
 SEED = 5923  # from https://www.random.org/integers
 
@@ -50,9 +52,9 @@ SEED = 5923  # from https://www.random.org/integers
 BCF_0 = BCF(
     n_exog=0,  # needs to know Z
     continuous_mask=np.repeat(True, 0),  # needs to know X
-    fx=base_model,
-    gv=base_model,
-    fx_imp=base_model,
+    fx=base_model_fx,
+    gv=base_model_gv,
+    fx_imp=base_model_imp,
     passes=2,
 )
 
