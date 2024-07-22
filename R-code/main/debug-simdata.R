@@ -3,7 +3,7 @@ library(tidyverse)
 
 # Import data
 dat <- read_csv(
-    "../results/check_data/20240711-111238/data_0.csv"
+    "../results/check_data/20240722-125309/data_0.csv"
 )
 
 # Look how the covariate space looks like
@@ -12,7 +12,7 @@ ggplot(dat) +
 
 # Look how predictions look like
 ggplot(dat %>% filter(set %in% c("train", "test"))) +
-    facet_grid(set ~ .) +
+    # facet_grid(set ~ .) +
     geom_point(aes(x = X1, y = y, col = set), alpha = .1)
 
 
@@ -23,8 +23,8 @@ ggplot(dat %>% filter(set %in% c("test", "train"))) +
 
 # Compute mses
 dat_mses <- dat %>%
-    group_by(environment, algorithm, set) %>%
-    summarise(mse = mean((!!sym(GENE_B) - y_pred)^2), .groups = "drop")
+    group_by(algorithm, set) %>%
+    summarise(mse = mean((y - y_pred)^2), .groups = "drop")
 
 ggplot(dat_mses) +
     facet_wrap(~set) +
