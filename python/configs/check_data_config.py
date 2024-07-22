@@ -9,6 +9,7 @@ from sklearn.tree import DecisionTreeRegressor
 from src.algorithms.algorithm_wrapper import ModelWrapper
 from src.algorithms.oracle_methods import ConstantFunc
 from src.bcf.boosted_control_function_2 import BCF, OLS
+from src.scenarios.generate_data import generate_data_XYZ_Gaussian
 from xgboost.sklearn import XGBRegressor
 
 # Purpose: How does the data and prediction look like for very large hard inteventions?
@@ -29,17 +30,18 @@ OUTPUT_CONFIG = "configs.py"
 
 
 # Data
+generateData = generate_data_XYZ_Gaussian
 n = 1000
-p = 2
-p_effective = 2
+p = 3
+p_effective = 3
 tree_depth = 3
 r = 1
 interv_strength = 10
-gamma_norm = 0.5
+gamma_norm = 2
 sd_y = 0.0
 hard_intervention = True
 
-n_sims = 1
+n_sims = 10
 
 SEED = 5923  # from https://www.random.org/integers
 

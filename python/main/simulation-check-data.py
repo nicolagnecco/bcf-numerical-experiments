@@ -10,7 +10,6 @@ import pandas as pd
 import src.data.data_selectors as ds
 from scipy.stats import pearsonr
 from src.data.data_encoders import prepare_Z
-from src.scenarios.generate_data import generate_data_Z_Gaussian
 from src.simulations.simulations_funcs import compute_mse
 from src.utils.utils import (
     add_interfix_to_filename,
@@ -49,7 +48,7 @@ def main():
             M,
             S,
             gamma,
-        ) = generate_data_Z_Gaussian(
+        ) = cfg.generateData(
             n=cfg.n,
             p=cfg.p,
             p_effective=cfg.p_effective,
