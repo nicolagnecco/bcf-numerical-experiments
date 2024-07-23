@@ -17,7 +17,7 @@ dat2plot <- dat %>%
 
 ggplot(dat2plot) +
     # facet_grid(set ~ .) +
-    geom_point(aes(x = X1, y = y, col = set), alpha = .1)
+    geom_point(aes(x = X1, y = y, col = Z), alpha = .1)
 
 
 ggplot(dat2plot) +
