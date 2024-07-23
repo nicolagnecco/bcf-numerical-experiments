@@ -3,7 +3,7 @@ library(tidyverse)
 
 # Import data
 dat <- read_csv(
-  "../results/output_data/20240722-154653/causalbench-data_ENSG00000109475.csv"
+  "../results/output_data/20240722-180833/causalbench-data_ENSG00000063177.csv"
 )
 
 genes <- colnames(dat)[1:6]
@@ -37,7 +37,7 @@ ggplot(dat2plot) +
   coord_equal()
 
 # Look how predictions look like
-ggplot(dat %>% filter(set %in% c("train", "test"), n_env_top == 40)) +
+ggplot(dat %>% filter(set %in% c("train", "test"), n_env_top == 20)) +
   facet_grid(environment ~ algorithm) +
   geom_point(aes(x = !!sym(genes[2]), y = !!sym(gene_y))) +
   geom_point(aes(x = !!sym(genes[2]), y = y_pred, col = algorithm)) +
