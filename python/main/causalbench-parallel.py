@@ -29,7 +29,9 @@ def process_gene(
     all_data = []
     results = []
 
-    for e in range(cfg.N_TOP_PREDS):
+    n_envs = cfg.N_ENVS
+
+    for e in range(n_envs):
         # print(e)
         env_selector = partial(cfg.ENV_SELECTOR, e=e)
         pred_selector = partial(cfg.PRED_SELECTOR, n_top_pred=cfg.N_TOP_PREDS)
@@ -39,16 +41,15 @@ def process_gene(
         )
 
         if cfg.ADD_CONFOUNDER:
-            confs = ds.select_confounders(
+            confs = cfg.CONF_SELECTOR(
                 gene, gene_data_full, env_data_full, "Z", preds, preds[e]
             )
-
-            confs = preds[e : e + 1]
 
             X_, y_, Z_ = ds.subset_data(gene, gene_data, env_data, preds + confs, envs)
 
             # set non-targeting observations
             row_mask = Z_["Z"] == "non-targeting"
+
             # add synthetic confounder
             X_conf = X_[row_mask].iloc[:, -len(confs) :]
             y_mean_train = y_[row_mask].values.mean()
@@ -56,7 +57,6 @@ def process_gene(
             new_y[row_mask] = y_[row_mask].values + X_conf
             new_y[~row_mask] = y_[~row_mask].values
             new_y[row_mask] = new_y[row_mask] * y_mean_train / new_y[row_mask].mean()
-            # new_y[~row_mask] = new_y[~row_mask] * y_mean_train / new_y[~row_mask].mean()
 
             X_ = X_.iloc[:, : len(preds)]
             y_ = pd.DataFrame(

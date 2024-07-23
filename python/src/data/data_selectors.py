@@ -49,6 +49,18 @@ def subset_data(
     return X, Y, Z
 
 
+def select_confounder_as_target_predictor(
+    response_gene: str,
+    X: pd.DataFrame,
+    Z: pd.DataFrame,
+    environment_column: str,
+    predictors: List[str],
+    target_predictor: str,
+    n_confounders: int = 1,
+):
+    return [target_predictor]
+
+
 def select_confounders(
     response_gene: str,
     X: pd.DataFrame,
@@ -187,6 +199,54 @@ def select_top_predictors_lasso(
     top_predictors = sorted_predictors[:n_top_pred]
 
     return top_predictors.to_list()
+
+
+def select_top_predictors_least_y_shift(
+    response_gene: str,
+    X: pd.DataFrame,
+    Z: pd.DataFrame,
+    n_top_pred: int,
+    environment_column: str,
+    rng: Optional[Union[int, np.random.RandomState, None]] = None,
+) -> List[str]:
+    """
+    Selects predictor that change the distribution of Y | Z = z the least
+
+    Parameters:
+    ----------
+    response_gene : str
+        The gene to be used as the response variable.
+    X : pd.DataFrame
+        DataFrame containing the dataset with genes as columns.
+    Z : pd.DataFrame
+        DataFrame containing the dataset with the environment column. This is not used in this function.
+    n_top_pred: int
+        The number of predictors to select
+    environment_column: str
+        Name of the environment column in `Z`
+
+    Returns:
+    -------
+    List[str]
+        List of predictor genes that change the distribution (i.e., expected value) of Y | Z = z the least.
+    """
+    # Extract the response variable data
+    row_mask = Z[environment_column] == "non-targeting"
+    y = X[row_mask][response_gene]
+    predictors = X[row_mask].drop(columns=[response_gene])
+
+    shifts = {}
+    for predictor in predictors:
+        int_mask = Z[environment_column] == predictor
+        y_obs = y
+        y_int = X[int_mask][response_gene]
+        shifts[predictor] = abs(y_obs.mean() - y_int.mean())
+
+    top_predictors = sorted(shifts, key=lambda pred: shifts[pred], reverse=False)[
+        :n_top_pred
+    ]
+
+    return top_predictors
 
 
 def select_top_predictors(

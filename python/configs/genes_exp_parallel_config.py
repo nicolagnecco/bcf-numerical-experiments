@@ -13,10 +13,10 @@ from src.bcf.boosted_control_function_2 import BCF, OLS
 from xgboost.sklearn import XGBRegressor
 
 # Purpose: Try to see what happens for increasing intervention strength
-base_model = LinearRegression()
+base_model = RandomForestRegressor()
 base_model_fx = LinearRegression()
 base_model_gv = LinearRegression()
-base_model_imp = LinearRegression()
+base_model_imp = RandomForestRegressor()
 # GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=1)
 
 # Runs
@@ -38,9 +38,11 @@ ADD_CONFOUNDER = False
 QUANTILE_THRES = 0.025
 N_OBS_SUBSAMPLED = 1000
 N_TOP_PREDS = 3
-PRED_SELECTOR = partial(ds.select_top_predictors_lasso, environment_column="Z")
+N_ENVS = 1
+PRED_SELECTOR = partial(ds.select_top_predictors_least_y_shift, environment_column="Z")
 ENV_SELECTOR = ds.select_environment_e
-SEED = 42  # from https://www.random.org/integers
+CONF_SELECTOR = ds.select_confounder_as_target_predictor
+SEED = 939  # from https://www.random.org/integers
 
 
 # Algorithms
