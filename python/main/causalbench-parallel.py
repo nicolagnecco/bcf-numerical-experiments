@@ -67,7 +67,7 @@ def process_gene(
         else:
             X_, y_, Z_ = ds.subset_data(gene, gene_data, env_data, preds, envs)
 
-        for n_env_top in [20, 40, 60, 80, 100]:
+        for n_env_top in [20, 30, 40, 60, 100]:
             train_test_splitter = partial(
                 ds.select_obs_in_observational_support,
                 low_quantile=cfg.QUANTILE_THRES,

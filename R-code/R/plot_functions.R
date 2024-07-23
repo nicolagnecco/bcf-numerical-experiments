@@ -18,11 +18,11 @@ my_palette <- list(
 METHODS <- c("BCF","IMP", "OLS", 
              "ControlTwicing","ControlTwicing_no_imp",  
              "OLS-old", "OLSTwicing", "ConstFunc",
-             "Causal")
+             "Causal", "BCF-lin", "OLS-lin")
 
 METHODS_LBL <- c("BCF", "IMP", "LS", "ControlTwicing","ControlTwicing_no_imp",
                  "Tree", "Tree + Linear","Constant",
-                 "Structural"
+                 "Structural", "BCF-linear", "OLS-linear"
                  ) 
 
 methods_tbl <- list(
@@ -34,7 +34,10 @@ methods_tbl <- list(
   c("method" = "Tree", "color" = my_palette$red, "shape" = 21, "size" = 1, "linetype" = "solid"),
   c("method" = "Constant", "color" = my_palette$darkgrey, "shape" = 19, "size" = 0.5, "linetype" = "dotted"),
   c("method" = "IMP", "color" = my_palette$c2, "shape" = 21, "size" = 1, "linetype" = "solid"),
-  c("method" = "Structural", "color" = my_palette$darkgrey, "shape" = 17, "size" = 0.5, "linetype" = "dotted")
+  c("method" = "Structural", "color" = my_palette$darkgrey, "shape" = 17, "size" = 0.5, "linetype" = "dotted"),
+  c("method" = "BCF-linear", "color" = my_palette$blue, "shape" = 21, "size" = 1, "linetype" = "solid"),
+  c("method" = "OLS-linear", "color" = my_palette$yellow, "shape" = 21, "size" = 1, "linetype" = "solid")
+  
 ) %>% 
   purrr::transpose() %>% 
   as_tibble() %>% 

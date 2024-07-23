@@ -99,7 +99,7 @@ class BCF(BaseEstimator):
     fx: ModelRegressor = RandomForestRegressor()
     fx_imp: ModelRegressor = RandomForestRegressor()
     gv: ModelRegressor = LinearRegression(fit_intercept=False)
-    alphas = 10 ** np.arange(-5.0, 6.0)
+    alphas: NDArray[np.float_] = 10 ** np.arange(-5.0, 6.0)
     verbose: bool = False
 
     def __post_init__(self):
