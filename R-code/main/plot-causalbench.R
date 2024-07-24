@@ -72,7 +72,7 @@ dat2plot_byrun <- res %>%
   pivot_longer(cols = c(train, test), names_to = "setting", values_to = "mse") %>% 
   filter(setting == "test")
 
-gg <- ggplot(dat2plot) +
+gg_test <- ggplot(dat2plot) +
   facet_grid(setting ~ confounder, scales = "free_y",  labeller = label_parsed) + 
   geom_line(data = dat2plot_byrun,
             aes(x =  -n_env_obs, y = mse, col = algorithm,
@@ -90,8 +90,60 @@ gg <- ggplot(dat2plot) +
   ylab("MSE") +
   theme(legend.position = c(0.5, -0.35), legend.direction = "horizontal") +
   coord_cartesian(ylim = c(0.05, .35)) +
-  labs(colour="Methods:", shape="Methods:", size="Methods:", linetype="Methods:"); gg
+  labs(colour="Methods:", shape="Methods:", size="Methods:", linetype="Methods:"); gg_test
 
-save_myplot(plt = gg, plt_nm = "../results/figures/genes.pdf", 
+save_myplot(plt = gg_test, plt_nm = "../results/figures/genes.pdf", 
             width = 1.75, height = 1.75)
 
+
+dat2plot <- res %>% 
+  group_by(algorithm, n_env_obs, confounder) %>% 
+  summarise(test = mean(mse_test),
+            train = mean(mse_train)) %>% 
+  pivot_longer(cols = c(train, test), names_to = "setting", values_to = "mse") %>% 
+  filter(setting == "train")
+
+dat2plot_byrun <- res %>% 
+  group_by(algorithm, n_env_obs, confounder, run) %>% 
+  summarise(test = mean(mse_test),
+            train = mean(mse_train)) %>% 
+  pivot_longer(cols = c(train, test), names_to = "setting", values_to = "mse") %>% 
+  filter(setting == "train")
+
+gg_train <- ggplot(dat2plot) +
+  facet_grid(setting ~ confounder, scales = "free_y",  labeller = label_parsed) + 
+  geom_line(data = dat2plot_byrun,
+            aes(x =  -n_env_obs, y = mse, col = algorithm,
+                group = interaction(algorithm, run)), alpha = .25) +
+  geom_line(aes(x = -n_env_obs, y = mse, col = algorithm, size = algorithm, 
+                linetype=algorithm), alpha = .75) +
+  geom_point(aes(x = -n_env_obs, y = mse, col = algorithm, shape=algorithm), 
+             fill = "white", size = 2, stroke = 0.75, alpha = 0.75) +
+  scale_color_manual(values = my_colors, guide = guide_legend(reverse = TRUE)) +
+  scale_shape_manual(values = my_shapes, guide = guide_legend(reverse = TRUE)) +
+  scale_size_manual(values = my_sizes, guide = guide_legend(reverse = TRUE)) +
+  scale_linetype_manual(values = my_linetypes, guide = guide_legend(reverse = TRUE)) +
+  # theme(legend.position = c(0.5, -0.35), legend.direction = "horizontal") +
+  xlab("Perturbation strength") +
+  ylab("MSE") +
+  theme(legend.position = c(0.5, -0.35), legend.direction = "horizontal") +
+  coord_cartesian(ylim = c(0.0, .1)) +
+  labs(colour="Methods:", shape="Methods:", size="Methods:", linetype="Methods:"); gg_train
+
+
+legend <- get_legend(
+  # create some space to the left of the legend
+  gg_test +
+    guides(color = guide_legend(title = "Methods:", nrow=1),
+           shape = guide_legend(title = "Methods:", nrow=1),
+           size = guide_legend(title = "Methods:", nrow=1),
+           linetype = guide_legend(title = "Methods:", nrow=1)) +
+    theme(legend.position = "bottom")
+)
+
+
+gg_mses <- ggarrange(gg_test, gg_train,
+                     nrow = 2, ncol = 1, align = "hv",
+                     legend = "bottom", legend.grob = legend)
+
+save_myplot(gg_mses, "../results/figures/genes-mses.pdf", height = 6, width = 5)
