@@ -1,9 +1,11 @@
 # %%
+import itertools
 from functools import partial
 from typing import Callable, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from numpy.random import BitGenerator, Generator, SeedSequence
 from numpy.typing import NDArray
 from scipy.stats import pearsonr, rankdata
 from sklearn.linear_model import LassoCV
@@ -395,6 +397,39 @@ def select_top_environments(
 
     # Example: Select all preds as environment variables + observational data
     return preds[:n_top_env] + ["non-targeting"]
+
+
+def env_selector(remaining_genes: List[str], r: int) -> List[List[str]]:
+    list_training_envs = list(itertools.combinations(remaining_genes, r))
+
+    return [[*training_envs, "non-targeting"] for training_envs in list_training_envs]
+
+
+def random_env_selector(
+    remaining_genes: List[str],
+    r: int,
+    num_sets: int,
+    seed: Optional[Union[int, SeedSequence, BitGenerator, Generator]] = None,
+) -> List[List[str]]:
+
+    rng = np.random.default_rng(seed)
+
+    # Generate all possible k-element combinations
+    all_combinations = list(itertools.combinations(remaining_genes, r))
+
+    # Randomly select a subset of the combinations
+    if num_sets > len(all_combinations):
+        raise ValueError(
+            "num_sets is greater than the number of available combinations"
+        )
+
+    selected_combinations_indices = rng.choice(
+        len(all_combinations), num_sets, replace=False
+    )
+    selected_combinations = [
+        [*all_combinations[i], "non-targeting"] for i in selected_combinations_indices
+    ]
+    return selected_combinations
 
 
 def test_train_split(
