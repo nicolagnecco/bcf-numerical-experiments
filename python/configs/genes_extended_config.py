@@ -16,16 +16,16 @@ from xgboost.sklearn import XGBRegressor
 
 TEST_RUN = False
 LAST_TASK = 2
-SEQUENTIAL = True
+SEQUENTIAL = False
 
 # Params
-P = 3  # Number of predictors
-C = 1  # Number of confounders
+P = 1  # Number of predictors
+C = 0  # Number of confounders
 R = 1  # Number of training environments
-NUM_SETS = 4  # Number of sets of training environments
+NUM_SETS = 3  # Number of sets of training environments
 ITERATIONS = 1  # Number of subsamples
 N_OBS_SUBSAMPLED = 1000
-SEED = 3430  # from https://www.random.org/integers
+SEED = 9234  # from https://www.random.org/integers
 PRED_SELECTOR = partial(ds.select_top_predictors_lasso, environment_column="Z")
 ENV_SELECTOR = partial(ds.random_env_selector, num_sets=NUM_SETS, seed=SEED)
 
@@ -44,7 +44,7 @@ def create_bcf_0():
         BCF(
             n_exog=0,  # needs to know Z
             continuous_mask=np.repeat(True, 0),  # needs to know X
-            fx=LinearRegression(),
+            fx=RandomForestRegressor(),
             gv=LinearRegression(),
             fx_imp=RandomForestRegressor(),
             passes=2,
