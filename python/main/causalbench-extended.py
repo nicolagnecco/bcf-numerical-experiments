@@ -49,24 +49,20 @@ def main():
 
     if cfg.SEQUENTIAL:
         # Sequential mode for debugging
-        for run_id, (
-            response_gene,
-            predictors,
-            confounders,
-            training_envs,
-            seed,
-        ) in enumerate(tqdm(tasks[: cfg.LAST_TASK])):
+        for response_gene, predictors, confounders, training_envs, seed, run_id in tqdm(
+            tasks[cfg.FIRST_TASK : cfg.LAST_TASK]
+        ):
             result = process_gene_environment(
-                response_gene, predictors, confounders, training_envs, seed
+                response_gene, predictors, confounders, training_envs, seed, run_id
             )
 
-            for res in result:
-                res["run_id"] = run_id
+            # for res in result:
+            # res["run_id"] = run_id
 
             results.append(result)
     else:
         # Parallel mode
-        with concurrent.futures.ThreadPoolExecutor() as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=6) as executor:
             futures = [
                 executor.submit(
                     process_gene_environment,
@@ -75,19 +71,20 @@ def main():
                     confounders,
                     training_envs,
                     seed,
+                    run_id,
                 )
-                for response_gene, predictors, confounders, training_envs, seed in tasks[
-                    : cfg.LAST_TASK
+                for response_gene, predictors, confounders, training_envs, seed, run_id in tasks[
+                    cfg.FIRST_TASK : cfg.LAST_TASK
                 ]
             ]
 
-            for run_id, future in enumerate(
-                tqdm(concurrent.futures.as_completed(futures), total=len(futures))
+            for future in tqdm(
+                concurrent.futures.as_completed(futures), total=len(futures)
             ):
                 result = future.result()
 
-                for res in result:
-                    res["run_id"] = run_id
+                # for res in result:
+                # res["run_id"] = run_id
 
                 results.append(result)
 
@@ -108,7 +105,7 @@ def generate_tasks(
     pred_selector: Callable[[str, pd.DataFrame, pd.DataFrame, int], List[str]],
     env_selector: Callable[[List[str], int], List[List[str]]],
     seed: Optional[int] = None,
-) -> List[Tuple[str, List[str], List[str], List[str], SeedSequence]]:
+) -> List[Tuple[str, List[str], List[str], List[str], SeedSequence, int]]:
 
     gene_data = DATA.drop(columns=["Z"])
     environment_data = DATA[["Z"]]
@@ -139,8 +136,10 @@ def generate_tasks(
     ss = np.random.SeedSequence(seed)
     child_states = ss.spawn(len(tasks) * n_iter)
     new_tasks = []
+    run_id = 0
     for task, child_state in zip(tasks * n_iter, child_states):
-        new_tasks.append((*task, child_state))
+        new_tasks.append((*task, child_state, run_id))
+        run_id += 1
 
     return new_tasks
 
@@ -195,6 +194,7 @@ def process_gene_environment(
     confounders: List[str],
     training_environments: List[str],
     seed: Optional[Union[int, SeedSequence, BitGenerator, Generator]] = None,
+    run_id: int = 0,
 ) -> List:
 
     rng = np.random.default_rng(seed)
@@ -231,6 +231,7 @@ def process_gene_environment(
 
     # Fit and evaluate algos
     results = []
+    df_preds = []
     for algo_name, algo_factory in cfg.algorithms:
 
         algo = algo_factory()
@@ -257,7 +258,19 @@ def process_gene_environment(
             algo_name=algo_name,
             M_0=M_0,
         )
+        train_results["run_id"] = run_id
         results.append(train_results)
+
+        if cfg.DEBUG_PREDICTIONS:
+            df_pred = df_predictions(
+                X=X_train,
+                y=y_train,
+                Z=Z_train,
+                algo_name=algo_name,
+                algo=algo,
+                setting="train",
+            )
+            df_preds.append(df_pred)
 
         # Evaluate on test
         for test_env in test_environments:
@@ -275,10 +288,39 @@ def process_gene_environment(
                 algo_name=algo_name,
                 M_0=M_0,
             )
-
+            test_results["run_id"] = run_id
             results.append(test_results)
 
+            if cfg.DEBUG_PREDICTIONS:
+                df_pred = df_predictions(
+                    X=X_test,
+                    y=y_test,
+                    Z=Z_test,
+                    algo_name=algo_name,
+                    algo=algo,
+                    setting="test",
+                )
+                df_preds.append(df_pred)
+
+    if cfg.DEBUG_PREDICTIONS:
+        final_df = pd.concat(df_preds)
+        final_df.to_csv(cfg.DEBUG_DF, index=False)
+
     return results
+
+
+def df_predictions(X, y, Z, algo_name, algo, setting):
+    df1 = pd.concat([y, X, Z], axis=1).reset_index(drop=True)
+
+    df2 = pd.DataFrame(
+        {
+            "algo": algo_name,
+            "env": setting,
+            "y_pred": algo.predict(X.to_numpy()),
+        }
+    )
+
+    return pd.concat([df1, df2], axis=1)
 
 
 def evaluate_model(

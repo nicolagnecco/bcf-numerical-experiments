@@ -15,17 +15,19 @@ from xgboost.sklearn import XGBRegressor
 # Purpose: ...
 
 TEST_RUN = False
-LAST_TASK = 2
+FIRST_TASK = 15
+LAST_TASK = 16
 SEQUENTIAL = False
+DEBUG_PREDICTIONS = False
 
 # Params
-P = 1  # Number of predictors
+P = 10  # Number of predictors
 C = 0  # Number of confounders
-R = 1  # Number of training environments
+R = 10  # Number of training environments
 NUM_SETS = 3  # Number of sets of training environments
 ITERATIONS = 1  # Number of subsamples
 N_OBS_SUBSAMPLED = 1000
-SEED = 9234  # from https://www.random.org/integers
+SEED = 4232  # from https://www.random.org/integers
 PRED_SELECTOR = partial(ds.select_top_predictors_lasso, environment_column="Z")
 ENV_SELECTOR = partial(ds.random_env_selector, num_sets=NUM_SETS, seed=SEED)
 
@@ -35,6 +37,7 @@ INPUT_DATA = "../data/processed/genes.csv"
 INPUT_CONFIG = "configs/genes_extended_config.py"
 RESULT_DIR = f"../results/try-extended/n_preds_{P}-n_conf_{C}-n_trainenv_{R}"
 RESULT_NAME = "causalbench-res.csv"
+DEBUG_DF = "../results/_debug/df.csv"
 OUTPUT_CONFIG = "_configs.py"
 
 
@@ -48,7 +51,7 @@ def create_bcf_0():
             gv=LinearRegression(),
             fx_imp=RandomForestRegressor(),
             passes=2,
-            alphas=np.array([0]),
+            # alphas=np.array([0]),
         )
     )
 
@@ -62,7 +65,7 @@ def create_bcf_1():
             gv=LinearRegression(),
             fx_imp=LinearRegression(),
             passes=2,
-            alphas=np.array([0]),
+            # alphas=np.array([0]),
         )
     )
 
@@ -90,4 +93,5 @@ algorithms = [
 
 # Conds
 if not (TEST_RUN):
+    FIRST_TASK = 0
     LAST_TASK = 10000000000
