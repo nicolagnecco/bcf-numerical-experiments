@@ -13,17 +13,17 @@ res <- read_csv("../results/try-extended/n_preds_3-n_conf_0-n_trainenv_3/2024072
 res <- read_csv("../results/try-extended/n_preds_10-n_conf_0-n_trainenv_10/20240726-105124/causalbench-res.csv")
 res <- read_csv("../results/try-extended/n_preds_10-n_conf_0-n_trainenv_10/20240726-115335/causalbench-res.csv")
 
-
+# imp = 0 
+res <- read_csv("../results/try-extended/n_preds_10-n_conf_0-n_trainenv_10/20240726-183930/causalbench-res.csv")
 
 sum_res <- res %>% 
   filter(algorithm %in% c("BCF", "ConstFunc", "OLS")) %>%
   group_by(algorithm, response, training_envs) %>% 
-  summarise(mse = mean(mse))
+  summarise(mse = max(mse))
 
 sum_res %>% 
   group_by(algorithm) %>% 
   summarise(mean(mse))
-
 
 ggplot(sum_res, aes(x = algorithm, y = mse)) +
   geom_line(aes(group=interaction(response, training_envs)), alpha = .1) +
