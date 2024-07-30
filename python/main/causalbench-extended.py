@@ -62,7 +62,7 @@ def main():
             results.append(result)
     else:
         # Parallel mode
-        with concurrent.futures.ProcessPoolExecutor(max_workers=6) as executor:
+        with concurrent.futures.ProcessPoolExecutor() as executor:
             futures = [
                 executor.submit(
                     process_gene_environment,
