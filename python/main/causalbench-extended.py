@@ -288,7 +288,9 @@ def process_gene_environment(
             df_preds.append(df_pred)
 
         # Evaluate on test
-        for test_env in tqdm(test_environments, desc="Processing test environments"):
+        for test_env in tqdm(
+            test_environments, desc="Processing test environments", disable=True
+        ):
             X_test, y_test, Z_test = list_test_data[test_env]
 
             test_results = evaluate_model(
