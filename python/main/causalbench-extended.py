@@ -96,11 +96,15 @@ def main():
     results_df = pd.DataFrame(flattened_results)
 
     # Save results to csv or parquet
-    if cfg.USE_PARQUET:
-        parquet_path = os.path.join(
-            result_dir_timestamp, cfg.RESULT_NAME.replace(".csv", ".parquet")
+    if cfg.USE_NPZ:
+        npz_path = os.path.join(
+            result_dir_timestamp, cfg.RESULT_NAME.replace(".csv", ".npz")
         )
-        results_df.to_parquet(parquet_path, index=False)
+
+        # Save each column as a separate array
+        np.savez_compressed(
+            npz_path, **{col: results_df[col].values for col in results_df.columns}
+        )
     else:
         results_df.to_csv(
             os.path.join(result_dir_timestamp, cfg.RESULT_NAME), index=False

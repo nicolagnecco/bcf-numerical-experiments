@@ -19,7 +19,7 @@ FIRST_TASK = 15
 LAST_TASK = 16
 SEQUENTIAL = False
 DEBUG_PREDICTIONS = False
-USE_PARQUET = True
+USE_NPZ = True
 
 SEED = 4232  # from https://www.random.org/integers
 RNG = np.random.default_rng(SEED)
@@ -29,7 +29,7 @@ RNG = np.random.default_rng(SEED)
 P = 27  # Number of predictors
 C = 0  # Number of confounders
 R = 27  # Number of training environments
-NUM_SETS = 10  # Number of sets of training environments
+NUM_SETS = 1  # Number of sets of training environments
 ITERATIONS = 1  # Number of subsamples
 N_OBS_SUBSAMPLED = 1000
 PRED_SELECTOR = partial(ds.select_top_predictors_lasso, environment_column="Z")
