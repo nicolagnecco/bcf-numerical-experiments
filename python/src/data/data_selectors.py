@@ -414,22 +414,74 @@ def random_env_selector(
 
     rng = np.random.default_rng(seed)
 
-    # Generate all possible k-element combinations
-    all_combinations = list(itertools.combinations(remaining_genes, r))
+    # Pick randomly k genes from remaining_genes.
+    selected_combinations = []
+    for i in range(num_sets):
+        sampled_genes = rng.choice(remaining_genes, r, replace=False).tolist() + [
+            "non-targeting"
+        ]
+        selected_combinations.append(sampled_genes)
 
-    # Randomly select a subset of the combinations
-    if num_sets > len(all_combinations):
-        raise ValueError(
-            "num_sets is greater than the number of available combinations"
-        )
+    # # Generate all possible k-element combinations
+    # all_combinations = list(itertools.combinations(remaining_genes, r))
 
-    selected_combinations_indices = rng.choice(
-        len(all_combinations), num_sets, replace=False
-    )
-    selected_combinations = [
-        [*all_combinations[i], "non-targeting"] for i in selected_combinations_indices
-    ]
+    # # Randomly select a subset of the combinations
+    # if num_sets > len(all_combinations):
+    #     raise ValueError(
+    #         "num_sets is greater than the number of available combinations"
+    #     )
+
+    # selected_combinations_indices = rng.choice(
+    #     len(all_combinations), num_sets, replace=False
+    # )
+    # selected_combinations = [
+    #     [*all_combinations[i], "non-targeting"] for i in selected_combinations_indices
+    # ]
     return selected_combinations
+
+
+def candidate_envs_outside_preds(
+    all_genes: List[str],
+    response_gene: str,
+    predictors: List[str],
+    confounders: List[str],
+) -> List[str]:
+    return [
+        gene
+        for gene in all_genes
+        if gene not in [response_gene, "non-targeting"] + predictors
+    ]
+
+
+def candidate_envs_inside_preds(
+    all_genes: List[str],
+    response_gene: str,
+    predictors: List[str],
+    confounders: List[str],
+) -> List[str]:
+    return predictors
+
+
+def candidate_envs_in_and_out_preds(
+    all_genes: List[str],
+    response_gene: str,
+    predictors: List[str],
+    confounders: List[str],
+    seed: Optional[Union[int, SeedSequence, BitGenerator, Generator]] = None,
+) -> List[str]:
+    rng = np.random.default_rng(seed)
+
+    # From all genes remove response gene, predictors, and "non-targeting"
+    outside_pred_genes = candidate_envs_outside_preds(
+        all_genes, response_gene, predictors, confounders
+    )
+
+    # Randomly select a subset of the outside predictors genes of size len(predictors)
+    outside_pred_genes_sample = rng.choice(
+        outside_pred_genes, len(predictors), replace=False
+    ).tolist()
+
+    return predictors + outside_pred_genes_sample
 
 
 def test_train_split(

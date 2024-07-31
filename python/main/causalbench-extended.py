@@ -40,6 +40,7 @@ def main():
         r=cfg.R,
         n_iter=cfg.ITERATIONS,
         pred_selector=cfg.PRED_SELECTOR,
+        select_candidate_envs=cfg.CANDIDATE_ENV_SELECTOR,
         env_selector=cfg.ENV_SELECTOR,
         seed=cfg.SEED,
     )
@@ -103,6 +104,7 @@ def generate_tasks(
     r: int,
     n_iter: int,
     pred_selector: Callable[[str, pd.DataFrame, pd.DataFrame, int], List[str]],
+    select_candidate_envs: Callable[[List[str], str, List[str], List[str]], List[str]],
     env_selector: Callable[[List[str], int], List[List[str]]],
     seed: Optional[int] = None,
 ) -> List[Tuple[str, List[str], List[str], List[str], SeedSequence, int]]:
@@ -121,10 +123,12 @@ def generate_tasks(
 
         confounders = predictors[:c]
 
-        all_genes = gene_data.columns.tolist()
-        remaining_genes = [
-            gene for gene in all_genes if gene not in [response_gene] + predictors
-        ]
+        all_genes = np.unique(environment_data).tolist()
+
+        remaining_genes = select_candidate_envs(
+            all_genes, response_gene, predictors, confounders
+        )
+
         training_environment_combinations = env_selector(remaining_genes, r)
 
         for training_environments in training_environment_combinations:
@@ -218,7 +222,8 @@ def process_gene_environment(
     X_train, y_train, Z_train = add_confounders(X_train, y_train, Z_train, confounders)
 
     # Get list of test data [(X_tests, y_tests, Z_tests), ...]
-    all_genes = gene_data.columns.to_list()
+    all_genes = np.unique(env_data).tolist()
+
     used_genes = [response_gene] + training_environments
     test_environments = [gene for gene in all_genes if gene not in used_genes]
 
@@ -273,7 +278,7 @@ def process_gene_environment(
             df_preds.append(df_pred)
 
         # Evaluate on test
-        for test_env in test_environments:
+        for test_env in tqdm(test_environments):
             X_test, y_test, Z_test = list_test_data[test_env]
 
             test_results = evaluate_model(
