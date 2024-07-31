@@ -344,13 +344,13 @@ def evaluate_model(
     mse = compute_mse(y.to_numpy().ravel(), y_pred)
     return {
         "response": response_gene,
-        "predictors": predictors,
-        "training_envs": training_environments,
-        "confounders": confounders,
+        # "predictors": predictors,
+        # "training_envs": training_environments,
+        # "confounders": confounders,
         "test_envs": test_env,
         "algorithm": algo_name,
         "mse": mse,
-        "M_0": M_0,
+        # "M_0": M_0,
     }
 
 
