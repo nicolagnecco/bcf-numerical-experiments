@@ -14,10 +14,10 @@ from xgboost.sklearn import XGBRegressor
 
 # Purpose: ...
 
-TEST_RUN = True
+TEST_RUN = False
 FIRST_TASK = 15
 LAST_TASK = 16
-SEQUENTIAL = True
+SEQUENTIAL = False
 DEBUG_PREDICTIONS = False
 
 SEED = 4232  # from https://www.random.org/integers
@@ -25,9 +25,9 @@ RNG = np.random.default_rng(SEED)
 
 
 # Params
-P = 3  # Number of predictors
+P = 27  # Number of predictors
 C = 0  # Number of confounders
-R = 2  # Number of training environments
+R = 27  # Number of training environments
 NUM_SETS = 1  # Number of sets of training environments
 ITERATIONS = 1  # Number of subsamples
 N_OBS_SUBSAMPLED = 1000
