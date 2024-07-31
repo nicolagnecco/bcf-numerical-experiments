@@ -51,7 +51,7 @@ def main():
     if cfg.SEQUENTIAL:
         # Sequential mode for debugging
         for response_gene, predictors, confounders, training_envs, seed, run_id in tqdm(
-            tasks[cfg.FIRST_TASK : cfg.LAST_TASK]
+            tasks[cfg.FIRST_TASK : cfg.LAST_TASK], desc="Processing tasks"
         ):
             result = process_gene_environment(
                 response_gene, predictors, confounders, training_envs, seed, run_id
@@ -278,7 +278,7 @@ def process_gene_environment(
             df_preds.append(df_pred)
 
         # Evaluate on test
-        for test_env in tqdm(test_environments):
+        for test_env in test_environments:
             X_test, y_test, Z_test = list_test_data[test_env]
 
             test_results = evaluate_model(
