@@ -19,6 +19,7 @@ FIRST_TASK = 15
 LAST_TASK = 16
 SEQUENTIAL = False
 DEBUG_PREDICTIONS = False
+USE_PARQUET = True
 
 SEED = 4232  # from https://www.random.org/integers
 RNG = np.random.default_rng(SEED)

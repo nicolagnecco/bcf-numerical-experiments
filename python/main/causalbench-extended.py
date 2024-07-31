@@ -94,7 +94,17 @@ def main():
 
     # Convert to DataFrame
     results_df = pd.DataFrame(flattened_results)
-    results_df.to_csv(os.path.join(result_dir_timestamp, cfg.RESULT_NAME), index=False)
+
+    # Save results to csv or parquet
+    if cfg.USE_PARQUET:
+        parquet_path = os.path.join(
+            result_dir_timestamp, cfg.RESULT_NAME.replace(".csv", ".parquet")
+        )
+        results_df.to_parquet(parquet_path, index=False)
+    else:
+        results_df.to_csv(
+            os.path.join(result_dir_timestamp, cfg.RESULT_NAME), index=False
+        )
 
 
 # %%
@@ -344,9 +354,9 @@ def evaluate_model(
     mse = compute_mse(y.to_numpy().ravel(), y_pred)
     return {
         "response": response_gene,
-        "predictors": predictors,
+        # "predictors": predictors,
         "training_envs": training_environments,
-        "confounders": confounders,
+        # "confounders": confounders,
         "test_envs": test_env,
         "algorithm": algo_name,
         "mse": mse,
