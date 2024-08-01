@@ -1,4 +1,5 @@
 # %%Imports
+import os
 from functools import partial
 
 import numpy as np
@@ -14,10 +15,10 @@ from xgboost.sklearn import XGBRegressor
 
 # Purpose: ...
 
-TEST_RUN = True
+TEST_RUN = False
 FIRST_TASK = 0
 LAST_TASK = 1
-SEQUENTIAL = True
+SEQUENTIAL = False
 DEBUG_PREDICTIONS = True
 USE_NPZ = False
 
@@ -26,9 +27,9 @@ RNG = np.random.default_rng(SEED)
 
 
 # Params
+ADD_CONFOUNDERS = True
 P = 3  # Number of predictors
-C = 1  # Number of confounders
-R = 1  # Number of training environments
+R = 3  # Number of training environments
 NUM_SETS = 1  # Number of sets of training environments
 ITERATIONS = 1  # Number of subsamples
 N_OBS_SUBSAMPLED = 1000
@@ -40,10 +41,9 @@ ENV_SELECTOR = partial(ds.random_env_selector, num_sets=NUM_SETS, seed=RNG)
 # %%
 # Paths
 INPUT_DATA = "../data/processed/genes_all.csv"
-INPUT_CONFIG = "configs/genes_extended_config.py"
-RESULT_DIR = f"../results/try-extended/n_preds_{P}-n_conf_{C}-n_trainenv_{R}"
+INPUT_CONFIG = "configs/causalbench_analysis_config.py"
+RESULT_DIR = f"../results/causalbench-analysis/n_preds_{P}-n_trainenv_{R}"
 RESULT_NAME = "causalbench-res.csv"
-DEBUG_DF = "../results/_debug/df.csv"
 OUTPUT_CONFIG = "_configs.py"
 
 
@@ -53,7 +53,7 @@ def create_bcf_0():
         BCF(
             n_exog=0,  # needs to know Z
             continuous_mask=np.repeat(True, 0),  # needs to know X
-            fx=LinearRegression(),
+            fx=RandomForestRegressor(),
             gv=LinearRegression(),
             fx_imp=RandomForestRegressor(),
             passes=2,
