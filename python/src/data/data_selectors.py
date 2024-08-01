@@ -94,6 +94,7 @@ def select_confounders(
     return top_confounders
 
 
+
 def select_genes(
     response_gene: str,
     X: pd.DataFrame,
@@ -534,6 +535,37 @@ def select_obs_from_envs(X, Y, Z, envs):
     row_mask = np.isin(Z, ["non-targeting"] + envs)
     return row_mask
 
+def get_test_mask_perc(
+    X: pd.DataFrame,
+    Z: pd.DataFrame,
+    envs: List[str],
+    lower_percentile: float,
+    upper_percentile: float,
+) -> NDArray[np.bool_]:
+
+    range_mask = np.zeros(len(X), dtype=bool)
+
+    for env in envs:
+        # keep observations (rows) where environment = env
+        env_mask = (Z == env).values.ravel()
+
+        # keep observations (rows) of the gene X[env] in environment = env
+        env_data = X[env_mask][env]
+
+        # Calculate percentile thresholds
+        lower_threshold = np.percentile(env_data, lower_percentile)
+        upper_threshold = np.percentile(env_data, upper_percentile)
+
+        np.percentile(env_data, lower_percentile)
+        # Get indices of rows within the percentile range
+        percentile_indices = env_data[
+            (env_data >= lower_threshold) & (env_data <= upper_threshold)
+        ].index
+        top_row_mask = X.index.isin(percentile_indices)
+
+        range_mask |= top_row_mask
+
+    return range_mask
 
 def select_obs_in_observational_support(
     X, Y, Z, low_quantile, n_env_top=10
