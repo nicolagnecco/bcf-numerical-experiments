@@ -1,4 +1,4 @@
-# %%
+#
 
 import concurrent.futures
 import itertools
@@ -7,7 +7,7 @@ import shutil
 from functools import partial
 from typing import Callable, List, Optional, Tuple, Union
 
-import configs.genes_extended_config as cfg
+import configs.causalbench_analysis_config as cfg
 import numpy as np
 import pandas as pd
 import src.data.data_encoders as de
@@ -18,167 +18,32 @@ from src.simulations.simulations_funcs import compute_mse
 from src.utils.utils import create_timestamped_folder, get_current_timestamp
 from tqdm import tqdm
 
-# %% Constant definitions
+#  Constant definitions
 
+# import data
 DATA = pd.read_csv(cfg.INPUT_DATA)
 
-# %% Data definitions
 
-
-# %% Function definitions
-def main():
-    # %% create directory for results
-    timestamp = get_current_timestamp()
-    result_dir_timestamp = create_timestamped_folder(cfg.RESULT_DIR, timestamp)
-
-    # save config files
-    shutil.copy(cfg.INPUT_CONFIG, os.path.join(result_dir_timestamp, cfg.OUTPUT_CONFIG))
-    # %% Generate tasks
-    tasks = generate_tasks(
-        p=cfg.P,
-        c=cfg.C,
-        r=cfg.R,
-        n_iter=cfg.ITERATIONS,
-        pred_selector=cfg.PRED_SELECTOR,
-        select_candidate_envs=cfg.CANDIDATE_ENV_SELECTOR,
-        env_selector=cfg.ENV_SELECTOR,
-        seed=cfg.SEED,
-    )
-
-    # %% Run tasks
-    results = []
-
-    if cfg.SEQUENTIAL:
-        # Sequential mode for debugging
-        for (
-            response_gene,
-            predictors,
-            confounders,
-            training_envs,
-            seed,
-            run_id,
-            iter_id,
-        ) in tqdm(tasks[cfg.FIRST_TASK : cfg.LAST_TASK], desc="Processing tasks"):
-            result = process_gene_environment(
-                response_gene,
-                predictors,
-                confounders,
-                training_envs,
-                seed,
-                run_id,
-                iter_id,
-            )
-
-            # for res in result:
-            # res["run_id"] = run_id
-
-            results.append(result)
-    else:
-        # Parallel mode
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            futures = [
-                executor.submit(
-                    process_gene_environment,
-                    response_gene,
-                    predictors,
-                    confounders,
-                    training_envs,
-                    seed,
-                    run_id,
-                    iter_id,
-                )
-                for response_gene, predictors, confounders, training_envs, seed, run_id, iter_id in tasks[
-                    cfg.FIRST_TASK : cfg.LAST_TASK
-                ]
-            ]
-
-            for future in tqdm(
-                concurrent.futures.as_completed(futures), total=len(futures)
-            ):
-                result = future.result()
-
-                # for res in result:
-                # res["run_id"] = run_id
-
-                results.append(result)
-
-    # %%% Flatten results
-    flattened_results = flatten_results(results)
-
-    # Convert to DataFrame
-    results_df = pd.DataFrame(flattened_results)
-
-    # Save results to csv or parquet
-    if cfg.USE_NPZ:
-        npz_path = os.path.join(
-            result_dir_timestamp, cfg.RESULT_NAME.replace(".csv", ".npz")
-        )
-
-        # Save each column as a separate array
-        np.savez_compressed(
-            npz_path, **{col: results_df[col].values for col in results_df.columns}
-        )
-    else:
-        results_df.to_csv(
-            os.path.join(result_dir_timestamp, cfg.RESULT_NAME), index=False
-        )
-
-
-# %%
-def generate_tasks(
-    p: int,
-    c: int,
-    r: int,
-    n_iter: int,
-    pred_selector: Callable[[str, pd.DataFrame, pd.DataFrame, int], List[str]],
-    select_candidate_envs: Callable[[List[str], str, List[str], List[str]], List[str]],
-    env_selector: Callable[[List[str], int], List[List[str]]],
-    seed: Optional[int] = None,
-) -> List[Tuple[str, List[str], List[str], List[str], SeedSequence, int, int]]:
-
-    gene_data = DATA.drop(columns=["Z"])
-    environment_data = DATA[["Z"]]
-
-    tasks = []
-
-    # for each response gene generate:
-    # - list of preds
-    # - list of confounders
-    # - list of training envs
-    for response_gene in gene_data.columns:
-        predictors = pred_selector(response_gene, gene_data, environment_data, p)
-
-        confounders = predictors[:c]
-
-        all_genes = np.unique(environment_data).tolist()
-
-        remaining_genes = select_candidate_envs(
-            all_genes, response_gene, predictors, confounders
-        )
-
-        training_environment_combinations = env_selector(remaining_genes, r)
-
-        for training_environments in training_environment_combinations:
-            tasks.append(
-                (response_gene, predictors, confounders, training_environments)
-            )
-
-    # replicate tasks
-    ss = np.random.SeedSequence(seed)
-    child_states = ss.spawn(len(tasks) * n_iter)
-    new_tasks = []
-    run_id = 0
-    for task, child_state in zip(tasks * n_iter, child_states):
-        # add identifier for n_iter
-        n_iter_id = run_id // len(tasks)
-        new_tasks.append((*task, child_state, run_id, n_iter_id))
-        run_id += 1
-
-    return new_tasks
+# Function definitions
 
 
 def flatten_results(nested_results):
     return [item for sublist in nested_results for item in sublist]
+
+
+def df_predictions(X, y, Z, algo_name, algo, setting, interv_strength):
+    df1 = pd.concat([y, X, Z], axis=1).reset_index(drop=True)
+
+    df2 = pd.DataFrame(
+        {
+            "algo": algo_name,
+            "env": setting,
+            "interv_strength": interv_strength,
+            "y_pred": algo.predict(X.to_numpy()),
+        }
+    )
+
+    return pd.concat([df1, df2], axis=1)
 
 
 def subsample_observational_data(num_obs_subsamples, seed):
@@ -195,7 +60,7 @@ def subsample_observational_data(num_obs_subsamples, seed):
     return gene_data, env_data
 
 
-def add_confounders(X, y, Z, confounders):
+def add_confounders(X, y, Z, confounders: List[str]):
 
     row_mask = Z["Z"] == "non-targeting"
 
@@ -221,14 +86,42 @@ def add_confounders(X, y, Z, confounders):
     return X, y_, Z
 
 
+def evaluate_model(
+    algo,
+    X,
+    y,
+    response_gene,
+    predictors,
+    training_environments,
+    confounders,
+    test_env,
+    algo_name,
+    M_0,
+    interv_strength,
+):
+    y_pred = algo.predict(X.to_numpy())
+    mse = compute_mse(y.to_numpy().ravel(), y_pred)
+    return {
+        "response": response_gene,
+        "predictors": predictors,
+        "training_envs": training_environments,
+        "confounders": confounders,
+        "test_envs": test_env,
+        "algorithm": algo_name,
+        "mse": mse,
+        "M_0": M_0,
+        "interv_strength": interv_strength,
+    }
+
+
 def process_gene_environment(
     response_gene: str,
     predictors: List[str],
-    confounders: List[str],
     training_environments: List[str],
     seed: Optional[Union[int, SeedSequence, BitGenerator, Generator]] = None,
     run_id: int = 0,
     iter_id: int = 0,
+    debug_dir: str = "./",
 ) -> List:
 
     rng = np.random.default_rng(seed)
@@ -238,10 +131,7 @@ def process_gene_environment(
         num_obs_subsamples=cfg.N_OBS_SUBSAMPLED, seed=rng
     )
 
-    # Get list of test data [(X_tests, y_tests, Z_tests), ...]
-    # all_genes = np.unique(env_data).tolist()
-    # used_genes = [response_gene] + training_environments
-    # test_environments = [gene for gene in all_genes if gene not in used_genes]
+    # Get list of test data
     test_environments = predictors
 
     list_test_data = {
@@ -269,9 +159,12 @@ def process_gene_environment(
         Z_train_enc = de.prepare_Z(Z_train)
 
         # Add confounders
-        X_train, y_train, Z_train = add_confounders(
-            X_train, y_train, Z_train, [test_env]
-        )
+        confounders = None
+        if cfg.ADD_CONFOUNDERS:
+            confounders = [test_env]
+            X_train, y_train, Z_train = add_confounders(
+                X_train, y_train, Z_train, confounders
+            )
 
         for algo_name, algo_factory in cfg.algorithms:
 
@@ -294,7 +187,7 @@ def process_gene_environment(
                 response_gene=response_gene,
                 predictors=predictors,
                 training_environments=training_environments,
-                confounders=test_env,
+                confounders=confounders,
                 test_env="train",
                 algo_name=algo_name,
                 M_0=M_0,
@@ -335,7 +228,7 @@ def process_gene_environment(
                         response_gene=response_gene,
                         predictors=predictors,
                         training_environments=training_environments,
-                        confounders=test_env,
+                        confounders=confounders,
                         test_env=test_env,
                         algo_name=algo_name,
                         M_0=M_0,
@@ -359,58 +252,165 @@ def process_gene_environment(
 
     if cfg.DEBUG_PREDICTIONS:
         final_df = pd.concat(df_preds)
-        final_df.to_csv(cfg.DEBUG_DF, index=False)
+        final_df.to_csv(
+            os.path.join(debug_dir, f"debug_response_{response_gene}.csv"),
+            index=False,
+        )
 
     return results
 
 
-def df_predictions(X, y, Z, algo_name, algo, setting, interv_strength):
-    df1 = pd.concat([y, X, Z], axis=1).reset_index(drop=True)
+def generate_tasks(
+    p: int,
+    r: int,
+    n_iter: int,
+    pred_selector: Callable[[str, pd.DataFrame, pd.DataFrame, int], List[str]],
+    select_candidate_envs: Callable[[List[str], str, List[str], List[str]], List[str]],
+    env_selector: Callable[[List[str], int], List[List[str]]],
+    seed: Optional[int] = None,
+) -> List[Tuple[str, List[str], List[str], SeedSequence, int, int]]:
 
-    df2 = pd.DataFrame(
-        {
-            "algo": algo_name,
-            "env": setting,
-            "interv_strength": interv_strength,
-            "y_pred": algo.predict(X.to_numpy()),
-        }
+    gene_data = DATA.drop(columns=["Z"])
+    environment_data = DATA[["Z"]]
+
+    tasks = []
+
+    # for each response gene generate:
+    # - list of preds
+    # - list of confounders
+    # - list of training envs
+    for response_gene in gene_data.columns:
+        predictors = pred_selector(response_gene, gene_data, environment_data, p)
+
+        task_response_preds = [(response_gene, predictors)]
+
+        all_genes = np.unique(environment_data).tolist()
+
+        remaining_genes = select_candidate_envs(
+            all_genes, response_gene, predictors, predictors
+        )
+
+        training_environment_combinations = env_selector(remaining_genes, r)
+
+        task_reponse_preds_conf_trenv = [
+            (*a, b)
+            for a in task_response_preds
+            for b in training_environment_combinations
+        ]
+
+        tasks.extend(task_reponse_preds_conf_trenv)
+
+    # replicate tasks
+    ss = np.random.SeedSequence(seed)
+    child_states = ss.spawn(len(tasks) * n_iter)
+    new_tasks = []
+    run_id = 0
+    for task, child_state in zip(tasks * n_iter, child_states):
+        n_iter_id = run_id // len(tasks)
+        new_tasks.append((*task, child_state, run_id, n_iter_id))
+        run_id += 1
+
+    return new_tasks
+
+
+def main():
+
+    # create directory for results and debug
+    timestamp = get_current_timestamp()
+    result_dir_timestamp = create_timestamped_folder(cfg.RESULT_DIR, timestamp)
+    debug_dir_timestamp = create_timestamped_folder(result_dir_timestamp, "_debug")
+
+    # save config files
+    shutil.copy(cfg.INPUT_CONFIG, os.path.join(result_dir_timestamp, cfg.OUTPUT_CONFIG))
+
+    # Generate tasks
+    tasks = generate_tasks(
+        p=cfg.P,
+        r=cfg.R,
+        n_iter=cfg.ITERATIONS,
+        pred_selector=cfg.PRED_SELECTOR,
+        select_candidate_envs=cfg.CANDIDATE_ENV_SELECTOR,
+        env_selector=cfg.ENV_SELECTOR,
+        seed=cfg.SEED,
     )
 
-    return pd.concat([df1, df2], axis=1)
+    #  Run tasks
+    results = []
 
+    if cfg.SEQUENTIAL:
+        # Sequential mode for debugging
+        for (
+            response_gene,
+            predictors,
+            training_envs,
+            seed,
+            run_id,
+            iter_id,
+        ) in tqdm(tasks[cfg.FIRST_TASK : cfg.LAST_TASK], desc="Processing tasks"):
+            result = process_gene_environment(
+                response_gene,
+                predictors,
+                training_envs,
+                seed,
+                run_id,
+                iter_id,
+                debug_dir_timestamp,
+            )
 
-def evaluate_model(
-    algo,
-    X,
-    y,
-    response_gene,
-    predictors,
-    training_environments,
-    confounders,
-    test_env,
-    algo_name,
-    M_0,
-    interv_strength,
-):
-    y_pred = algo.predict(X.to_numpy())
-    mse = compute_mse(y.to_numpy().ravel(), y_pred)
-    return {
-        "response": response_gene,
-        "predictors": predictors,
-        "training_envs": training_environments,
-        "confounders": confounders,
-        "test_envs": test_env,
-        "algorithm": algo_name,
-        "mse": mse,
-        "M_0": M_0,
-        "interv_strength": interv_strength,
-    }
+            # for res in result:
+            # res["run_id"] = run_id
 
+            results.append(result)
+    else:
+        # Parallel mode
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            futures = [
+                executor.submit(
+                    process_gene_environment,
+                    response_gene,
+                    predictors,
+                    training_envs,
+                    seed,
+                    run_id,
+                    iter_id,
+                    debug_dir_timestamp,
+                )
+                for response_gene, predictors, training_envs, seed, run_id, iter_id in tasks[
+                    cfg.FIRST_TASK : cfg.LAST_TASK
+                ]
+            ]
 
-# %%
+            for future in tqdm(
+                concurrent.futures.as_completed(futures), total=len(futures)
+            ):
+                result = future.result()
+
+                # for res in result:
+                # res["run_id"] = run_id
+
+                results.append(result)
+
+    # % Flatten results
+    flattened_results = flatten_results(results)
+
+    # Convert to DataFrame
+    results_df = pd.DataFrame(flattened_results)
+
+    # Save results to csv or parquet
+    if cfg.USE_NPZ:
+        npz_path = os.path.join(
+            result_dir_timestamp, cfg.RESULT_NAME.replace(".csv", ".npz")
+        )
+
+        # Save each column as a separate array
+        np.savez_compressed(
+            npz_path, **{col: results_df[col].values for col in results_df.columns}
+        )
+    else:
+        results_df.to_csv(
+            os.path.join(result_dir_timestamp, cfg.RESULT_NAME), index=False
+        )
 
 
 if __name__ == "__main__":
     main()
-
-# %%
