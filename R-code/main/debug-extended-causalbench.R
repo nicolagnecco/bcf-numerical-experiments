@@ -7,10 +7,10 @@ dat <- read_csv("../results/_debug/df.csv")
 genes <- colnames(dat)[1:6]
 
 
-dat2plot <- dat %>% filter(env == "train" | Z == "ENSG00000231500")
+dat2plot <- dat %>% filter(interv_strength %in% c(0, 0.8))
 
 ggplot(dat2plot %>% filter(algo=="BCF")) +
-  geom_point(aes(x = !!sym(genes[2]), y = !!sym(genes[1]), col = Z), alpha = 0.5) +
+  geom_point(aes(x = !!sym(genes[2]), y = !!sym(genes[1]), col = env), alpha = 0.5) +
   coord_equal()
 
 ggplot(dat2plot) +
