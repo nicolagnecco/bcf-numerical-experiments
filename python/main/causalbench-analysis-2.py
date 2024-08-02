@@ -270,49 +270,49 @@ def process_gene_environment(
                 )
                 df_preds.append(df_pred)
 
-                for perc in cfg.TEST_PERCENTAGES:
+            for perc in cfg.TEST_PERCENTAGES:
 
-                    test_mask = get_test_mask_perc(
-                        X,
-                        Z,
-                        [test_env],
-                        train_mask,
-                        100 * (1 - perc),
-                        100 * (1),
-                    )
+                test_mask = get_test_mask_perc(
+                    X,
+                    Z,
+                    [test_env],
+                    train_mask,
+                    100 * (1 - perc),
+                    100 * (1),
+                )
 
-                    X_test = X[test_mask]
-                    y_test = y[test_mask]
-                    Z_test = Z[test_mask]
+                X_test = X[test_mask]
+                y_test = y[test_mask]
+                Z_test = Z[test_mask]
 
-                    test_results = evaluate_model(
-                        algo=algo,
+                test_results = evaluate_model(
+                    algo=algo,
+                    X=X_test,
+                    y=y_test,
+                    response_gene=response_gene,
+                    predictors=predictors,
+                    training_environments=training_environments,
+                    confounders=confounders,
+                    test_env=test_env,
+                    algo_name=algo_name,
+                    M_0=M_0,
+                    interv_strength=perc,
+                )
+                test_results["run_id"] = run_id
+                test_results["iter_id"] = iter_id
+                results.append(test_results)
+
+                if cfg.DEBUG_PREDICTIONS:
+                    df_pred = df_predictions(
                         X=X_test,
                         y=y_test,
-                        response_gene=response_gene,
-                        predictors=predictors,
-                        training_environments=training_environments,
-                        confounders=confounders,
-                        test_env=test_env,
+                        Z=Z_test,
                         algo_name=algo_name,
-                        M_0=M_0,
+                        algo=algo,
+                        setting="test",
                         interv_strength=perc,
                     )
-                    test_results["run_id"] = run_id
-                    test_results["iter_id"] = iter_id
-                    results.append(test_results)
-
-                    if cfg.DEBUG_PREDICTIONS:
-                        df_pred = df_predictions(
-                            X=X_test,
-                            y=y_test,
-                            Z=Z_test,
-                            algo_name=algo_name,
-                            algo=algo,
-                            setting="test",
-                            interv_strength=perc,
-                        )
-                        df_preds.append(df_pred)
+                    df_preds.append(df_pred)
 
     if cfg.DEBUG_PREDICTIONS:
         final_df = pd.concat(df_preds)
