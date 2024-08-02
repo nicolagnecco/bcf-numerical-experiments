@@ -22,7 +22,7 @@ SEQUENTIAL = False
 DEBUG_PREDICTIONS = False
 USE_NPZ = False
 
-SEED = 4232  # from https://www.random.org/integers
+SEED = 42  # from https://www.random.org/integers
 RNG = np.random.default_rng(SEED)
 
 
@@ -33,7 +33,7 @@ R = 1  # Number of training environments
 NUM_SETS = 1  # Number of sets of training environments
 ITERATIONS = 1  # Number of subsamples
 N_OBS_SUBSAMPLED = 1000
-TEST_PERCENTAGES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+TEST_PERCENTAGES = [0.1, 0.15, 0.2, 0.25, 0.3]
 PRED_SELECTOR = partial(ds.select_top_predictors_lasso, environment_column="Z")
 CANDIDATE_ENV_SELECTOR = ds.candidate_envs_inside_preds
 ENV_SELECTOR = ds.env_selector
@@ -41,8 +41,10 @@ ENV_SELECTOR = ds.env_selector
 # %%
 # Paths
 INPUT_DATA = "../data/processed/genes_all.csv"
-INPUT_CONFIG = "configs/causalbench_analysis_config.py"
-RESULT_DIR = f"../results/causalbench-analysis-2/n_preds_{P}-n_trainenv_{R}"
+INPUT_CONFIG = "configs/causalbench_analysis_config_2.py"
+RESULT_DIR = (
+    f"../results/causalbench-analysis-2/n_preds_{P}-confounders_{ADD_CONFOUNDERS}"
+)
 RESULT_NAME = "causalbench-res.csv"
 OUTPUT_CONFIG = "_configs.py"
 

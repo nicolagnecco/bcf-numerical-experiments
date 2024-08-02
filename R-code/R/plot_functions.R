@@ -18,11 +18,11 @@ my_palette <- list(
 METHODS <- c("BCF","IMP", "OLS", 
              "ControlTwicing","ControlTwicing_no_imp",  
              "OLS-old", "OLSTwicing", "ConstFunc",
-             "Causal", "BCF-lin", "OLS-lin")
+             "Causal", "BCF-lin", "OLS-lin", "BCF-lin-RF")
 
 METHODS_LBL <- c("BCF", "IMP", "LS", "ControlTwicing","ControlTwicing_no_imp",
                  "Tree", "Tree + Linear","Constant",
-                 "Structural", "BCF-linear", "OLS-linear"
+                 "Structural", "BCF-linear", "OLS-linear", "BCF-linear-RF"
                  ) 
 
 methods_tbl <- list(
@@ -36,7 +36,8 @@ methods_tbl <- list(
   c("method" = "IMP", "color" = my_palette$c2, "shape" = 21, "size" = 1, "linetype" = "solid"),
   c("method" = "Structural", "color" = my_palette$darkgrey, "shape" = 17, "size" = 0.5, "linetype" = "dotted"),
   c("method" = "BCF-linear", "color" = my_palette$blue, "shape" = 21, "size" = 1, "linetype" = "solid"),
-  c("method" = "OLS-linear", "color" = my_palette$yellow, "shape" = 21, "size" = 1, "linetype" = "solid")
+  c("method" = "OLS-linear", "color" = my_palette$yellow, "shape" = 21, "size" = 1, "linetype" = "solid"),
+  c("method" = "BCF-linear-RF", "color" = my_palette$green, "shape" = 21, "size" = 1, "linetype" = "solid")
   
 ) %>% 
   purrr::transpose() %>% 

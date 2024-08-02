@@ -1,6 +1,40 @@
 source("main/dependencies.R")
 
-res <- read_csv("../results/causalbench-analysis-2/n_preds_3-n_trainenv_1/20240802-093448///causalbench-res.csv") %>% 
+# Y, X, envs = X_1 s.t. do(X_1 = is weak)
+
+
+# 1. try choosing points randomly (FALLBACK) !!! NO INJECTION OF CONFOUNDER
+# 2. choose training envs s.t. may have causal effect on predictor
+#    (check on ints that have causal effect (median(Y | envs)) -> (Matthieu?))
+# want to select genes that are causally related.
+# 3. pooling training envs (do not contains those knocked, possibly) into 1
+# 0. fix response, look for predictors that are very correlated
+
+res <- read_csv(
+  "../results/causalbench-analysis-2/n_preds_3-confounders_False/20240802-140555/causalbench-res.csv"
+)
+
+# few shots random training obs
+res <- read_csv(
+  "../results/causalbench-analysis-2/n_preds_3-confounders_False/20240802-141446/causalbench-res.csv"
+)
+
+
+res <- read_csv(
+  "../results/causalbench-analysis-2/n_preds_3-confounders_True/20240802-091537/causalbench-res.csv"
+)
+
+# few shots random training obs
+res <- read_csv(
+  "../results/causalbench-analysis-2/n_preds_3-confounders_True/20240802-142756/causalbench-res.csv"
+)
+# few shots random training obs more focused on small interv_strength
+res <- read_csv(
+  "../results/causalbench-analysis-2/n_preds_3-confounders_True/20240802-143239//causalbench-res.csv"
+)
+
+
+res <- res %>% 
   mutate(algorithm = refactor_methods(algorithm, rev=TRUE)) 
 
 
@@ -24,7 +58,7 @@ dat2plot_agg <- dat2plot %>%
   group_by(algorithm, interv_strength) %>% 
   summarise(mse = mean(mse))
 
-ggplot(data=dat2plot_agg) +
+ggplot(data=dat2plot_agg %>% filter(TRUE)) +
   geom_line(mapping=aes(x = interv_strength, y = mse, 
                         col = algorithm, size = algorithm, linetype=algorithm))+
   # geom_line(data=dat2plot, mapping=aes(x = interv_strength, y = mse, col = algorithm,
@@ -35,5 +69,5 @@ ggplot(data=dat2plot_agg) +
   scale_color_manual(values = my_colors, guide = guide_legend(reverse = TRUE)) +
   scale_size_manual(values = my_sizes, guide = guide_legend(reverse = TRUE)) +
   scale_linetype_manual(values = my_linetypes, guide = guide_legend(reverse = TRUE)) +
-  scale_shape_manual(values = my_shapes, guide = guide_legend(reverse = TRUE)) 
+  scale_shape_manual(values = my_shapes, guide = guide_legend(reverse = TRUE))
 

@@ -16,6 +16,10 @@ res <- read_csv("../results/try-extended/n_preds_10-n_conf_0-n_trainenv_10/20240
 # imp = 0 
 res <- read_csv("../results/try-extended/n_preds_10-n_conf_0-n_trainenv_10/20240726-183930/causalbench-res.csv")
 
+# 622
+# 28 genes
+# TRAIN: Y, X_1, ..., X_27, envs \in {1, ..., 27} U {others ...}
+# TEST: envs \in {remaining} 
 
 # try all_genes
 res <- read_csv("../results/try-extended/n_preds_27-n_conf_0-n_trainenv_27/20240731-134803/causalbench-res.csv")
@@ -28,13 +32,12 @@ res <- read_csv("../results/try-extended/n_preds_3-n_conf_1-n_trainenv_1/2024080
 
 ggplot(res) +
   # facet_grid(~confounder) +
-  geom_boxplot(aes(x = factor(interv_strength), 
+  geom_boxplot(aes(x = algorithm,
                    y = mse, 
-                   col = factor(algorithm)), outlier.shape = 21) +
-  scale_color_manual(values = my_colors, guide = guide_legend(reverse = TRUE))
+                   col = factor(algorithm)), outlier.shape = 21)
 
 dat2plot <- res %>% 
-  group_by(algorithm, interv_strength) %>% 
+  group_by(algorithm) %>% 
   summarise(mse = mean(mse))
 
 dat2plot_byrun <- res %>% 

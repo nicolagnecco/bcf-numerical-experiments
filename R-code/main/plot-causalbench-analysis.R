@@ -1,14 +1,28 @@
 source("main/dependencies.R")
 
-res <- read_csv("../results/causalbench-analysis/n_preds_3-n_trainenv_3/20240801-230614/causalbench-res.csv") %>%
+# SETTING: use as training envs genes that are not predictors.
+# TRAIN: Y, X, envs != X -> mod
+# TEST: predict(mod, env = X[j]) for j = 1, ..., p
+# 
+
+
+res <- read_csv(
+  "../results/causalbench-analysis/n_preds_10-n_trainenv_5-confounders_True/20240802-083139/causalbench-res.csv"
+  ) %>%
   mutate(algorithm = refactor_methods(algorithm, rev=TRUE)) 
 
+res %>% select(response, predictors, training_envs, confounders, test_envs) %>% unique() %>% view()
 
-# for each response, and intervention strength, 
+ggplot(res) +
+  geom_boxplot(aes(x = factor(interv_strength), y = mse, col = algorithm)) +
+  scale_color_manual(values = my_colors, guide = guide_legend(reverse = TRUE))
+
+
+# for each response, intervention strength, and iter_id,
 # take maximum over training environments, confounders, and, most importantly,
 # over direction of perturbations
 dat2plot <- res %>% 
-  group_by(algorithm, response, interv_strength) %>% 
+  group_by(algorithm, response, iter_id, interv_strength) %>% 
   summarise(mse = max(mse))
 
 dat2plot_agg <- dat2plot %>% 
@@ -17,17 +31,16 @@ dat2plot_agg <- dat2plot %>%
   summarise(mse = mean(mse))
 
 
-ggplot(res) +
-  geom_boxplot(aes(x = factor(interv_strength), y = mse, col = algorithm)) +
-  scale_color_manual(values = my_colors, guide = guide_legend(reverse = TRUE))
+# fix P, increase R -> get classical control function
+# 
 
 
 ggplot(data=dat2plot_agg) +
   geom_line(mapping=aes(x = interv_strength, y = mse, 
                         col = algorithm, size = algorithm, linetype=algorithm))+
   # geom_line(data=dat2plot, mapping=aes(x = interv_strength, y = mse, col = algorithm,
-                                       # group = interaction(algorithm, response)),
-            # alpha = .2) +
+  #                                      group = interaction(algorithm, response)),
+  #           alpha = .2) +
   geom_point(aes(x = interv_strength, y = mse, col = algorithm, shape=algorithm), 
              fill = "white", size = 2, stroke = 0.75, alpha = 0.75) +
   scale_color_manual(values = my_colors, guide = guide_legend(reverse = TRUE)) +

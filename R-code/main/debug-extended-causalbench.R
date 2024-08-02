@@ -3,14 +3,14 @@ source("main/dependencies.R")
 
 # Import data
 dat2 <- dat
-dat <- read_csv("../results/_debug/df.csv")
+dat <- read_csv("../results/causalbench-analysis-2/n_preds_3-n_trainenv_1/20240802-113954/_debug/debug-response_ENSG00000122406-run_id_0-iter_id_0.csv")
 genes <- colnames(dat)[1:6]
 
 
-dat2plot <- dat %>% filter(interv_strength %in% c(0, 0.8))
+dat2plot <- dat %>% filter(interv_strength %in% c(0, 0.6))
 
 ggplot(dat2plot %>% filter(algo=="BCF")) +
-  geom_point(aes(x = !!sym(genes[2]), y = !!sym(genes[1]), col = env), alpha = 0.5) +
+  geom_point(aes(x = !!sym(genes[2]), y = !!sym(genes[1]), col = Z), alpha = 0.5) +
   coord_equal()
 
 ggplot(dat2plot) +

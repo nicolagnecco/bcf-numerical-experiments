@@ -52,6 +52,37 @@ def get_training_mask(X, Z, envs, n_env_top) -> NDArray[np.bool_]:
     return train_mask
 
 
+def get_training_mask_random(
+    X: pd.DataFrame, Z: pd.DataFrame, envs: list, n_env_top: int
+) -> np.ndarray:
+    # obs_mask: Mask for "non-targeting" observations
+    obs_mask = (Z["Z"] == "non-targeting").values.ravel()
+
+    # Initialize training mask to include all "observational" rows
+    train_mask = obs_mask.copy()
+    range_mask = np.zeros(len(X), dtype=bool)
+
+    for env in envs:
+        # Keep observations (rows) where environment = env
+        env_mask = (Z["Z"] == env).values.ravel()
+
+        # Randomly sample n_env_top observations (rows) of the gene X[env] in environment = env
+        env_indices = X[env_mask].index
+        if len(env_indices) > n_env_top:
+            sampled_indices = np.random.choice(
+                env_indices, size=n_env_top, replace=False
+            )
+        else:
+            sampled_indices = env_indices
+
+        top_row_mask = X.index.isin(sampled_indices)
+        range_mask |= top_row_mask
+
+    train_mask |= range_mask
+
+    return train_mask
+
+
 def get_test_mask_perc(
     X: pd.DataFrame,
     Z: pd.DataFrame,
@@ -212,7 +243,7 @@ def process_gene_environment(
         )
 
         # Get X_train, y_train, Z_train
-        train_mask = get_training_mask(X, Z, [test_env], 20)
+        train_mask = get_training_mask_random(X, Z, [test_env], 20)
 
         X_train = X[train_mask]
         y_train = y[train_mask]
