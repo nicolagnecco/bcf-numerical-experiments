@@ -174,8 +174,11 @@ def process_gene_environment(
             algo.fit(X_train.to_numpy(), y_train.to_numpy().ravel(), Z_train_enc)
 
             # !!! for debugging only
-            if isinstance(algo.model, BCF):
-                M_0 = algo.model.M_0_
+            if cfg.DEBUG_PREDICTIONS:
+                if isinstance(algo.model, BCF):
+                    M_0 = algo.model.M_0_
+                else:
+                    M_0 = None
             else:
                 M_0 = None
 
