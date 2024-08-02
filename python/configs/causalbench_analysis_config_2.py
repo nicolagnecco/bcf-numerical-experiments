@@ -19,7 +19,7 @@ TEST_RUN = False
 FIRST_TASK = 0
 LAST_TASK = 1
 SEQUENTIAL = False
-DEBUG_PREDICTIONS = True
+DEBUG_PREDICTIONS = False
 USE_NPZ = False
 
 SEED = 4232  # from https://www.random.org/integers
@@ -28,8 +28,8 @@ RNG = np.random.default_rng(SEED)
 
 # Params
 ADD_CONFOUNDERS = True
-P = 3  # Number of predictors
-R = 1  # Number of training environments
+P = 10  # Number of predictors
+R = 5  # Number of training environments
 NUM_SETS = 1  # Number of sets of training environments
 ITERATIONS = 1  # Number of subsamples
 N_OBS_SUBSAMPLED = 1000
@@ -76,6 +76,20 @@ def create_bcf_1():
     )
 
 
+def create_bcf_2():
+    return ModelWrapper(
+        BCF(
+            n_exog=0,  # needs to know Z
+            continuous_mask=np.repeat(True, 0),  # needs to know X
+            fx=LinearRegression(),
+            gv=LinearRegression(),
+            fx_imp=RandomForestRegressor(),
+            passes=2,
+            alphas=np.array([0]),
+        )
+    )
+
+
 def create_ols_0():
     return ModelWrapper(OLS(fx=RandomForestRegressor()))
 
@@ -91,6 +105,7 @@ def create_const():
 algorithms = [
     ("BCF", create_bcf_0),
     ("BCF-lin", create_bcf_1),
+    ("BCF-lin-RF", create_bcf_2),
     ("OLS", create_ols_0),
     ("OLS-lin", create_ols_1),
     ("ConstFunc", create_const),
