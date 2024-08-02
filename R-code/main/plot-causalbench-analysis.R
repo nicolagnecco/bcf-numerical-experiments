@@ -22,10 +22,15 @@ ggplot(res) +
   scale_color_manual(values = my_colors, guide = guide_legend(reverse = TRUE))
 
 
-ggplot() +
-  geom_line(data=dat2plot_agg, mapping=aes(x = interv_strength, y = mse, col = algorithm),
-            size=2) +
+ggplot(data=dat2plot_agg) +
+  geom_line(mapping=aes(x = interv_strength, y = mse, 
+                        col = algorithm, size = algorithm, linetype=algorithm))+
   # geom_line(data=dat2plot, mapping=aes(x = interv_strength, y = mse, col = algorithm,
                                        # group = interaction(algorithm, response)),
             # alpha = .2) +
-  scale_color_manual(values = my_colors, guide = guide_legend(reverse = TRUE))
+  geom_point(aes(x = interv_strength, y = mse, col = algorithm, shape=algorithm), 
+             fill = "white", size = 2, stroke = 0.75, alpha = 0.75) +
+  scale_color_manual(values = my_colors, guide = guide_legend(reverse = TRUE)) +
+  scale_size_manual(values = my_sizes, guide = guide_legend(reverse = TRUE)) +
+  scale_linetype_manual(values = my_linetypes, guide = guide_legend(reverse = TRUE)) +
+  scale_shape_manual(values = my_shapes, guide = guide_legend(reverse = TRUE)) 
