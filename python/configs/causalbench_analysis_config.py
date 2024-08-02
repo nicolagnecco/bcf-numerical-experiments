@@ -28,8 +28,8 @@ RNG = np.random.default_rng(SEED)
 
 # Params
 ADD_CONFOUNDERS = True
-P = 3  # Number of predictors
-R = 3  # Number of training environments
+P = 10  # Number of predictors
+R = 5  # Number of training environments
 NUM_SETS = 10  # Number of sets of training environments
 ITERATIONS = 10  # Number of subsamples
 N_OBS_SUBSAMPLED = 1000
