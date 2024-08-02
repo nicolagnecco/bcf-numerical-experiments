@@ -19,7 +19,7 @@ TEST_RUN = False
 FIRST_TASK = 0
 LAST_TASK = 1
 SEQUENTIAL = False
-DEBUG_PREDICTIONS = True
+DEBUG_PREDICTIONS = False
 USE_NPZ = False
 
 SEED = 4232  # from https://www.random.org/integers
@@ -29,9 +29,9 @@ RNG = np.random.default_rng(SEED)
 # Params
 ADD_CONFOUNDERS = True
 P = 3  # Number of predictors
-R = 3  # Number of training environments
-NUM_SETS = 1  # Number of sets of training environments
-ITERATIONS = 1  # Number of subsamples
+R = 1  # Number of training environments
+NUM_SETS = 10  # Number of sets of training environments
+ITERATIONS = 10  # Number of subsamples
 N_OBS_SUBSAMPLED = 1000
 TEST_PERCENTAGES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 PRED_SELECTOR = partial(ds.select_top_predictors_lasso, environment_column="Z")
