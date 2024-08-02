@@ -42,7 +42,7 @@ ENV_SELECTOR = partial(ds.random_env_selector, num_sets=NUM_SETS, seed=RNG)
 # Paths
 INPUT_DATA = "../data/processed/genes_all.csv"
 INPUT_CONFIG = "configs/causalbench_analysis_config.py"
-RESULT_DIR = f"../results/causalbench-analysis/n_preds_{P}-n_trainenv_{R}"
+RESULT_DIR = f"../results/causalbench-analysis/n_preds_{P}-n_trainenv_{R}-confounders_{ADD_CONFOUNDERS}"
 RESULT_NAME = "causalbench-res.csv"
 OUTPUT_CONFIG = "_configs.py"
 
@@ -76,6 +76,20 @@ def create_bcf_1():
     )
 
 
+def create_bcf_2():
+    return ModelWrapper(
+        BCF(
+            n_exog=0,  # needs to know Z
+            continuous_mask=np.repeat(True, 0),  # needs to know X
+            fx=LinearRegression(),
+            gv=LinearRegression(),
+            fx_imp=RandomForestRegressor(),
+            passes=2,
+            alphas=np.array([0]),
+        )
+    )
+
+
 def create_ols_0():
     return ModelWrapper(OLS(fx=RandomForestRegressor()))
 
@@ -91,6 +105,7 @@ def create_const():
 algorithms = [
     ("BCF", create_bcf_0),
     ("BCF-lin", create_bcf_1),
+    ("BCF-lin-RF", create_bcf_2),
     ("OLS", create_ols_0),
     ("OLS-lin", create_ols_1),
     ("ConstFunc", create_const),
