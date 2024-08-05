@@ -8,38 +8,11 @@ from scipy.stats import ranksums
 
 
 # Function definition
-def have_same_dist(x: np.ndarray, y: np.ndarray) -> bool:
-    return ranksums(x, y)[1] > 0.05
-
-
-def is_cause(
-    gene: int,
-    dat_filtered: NDArray[np.float64],
-    obs_index: NDArray[np.bool_],
-    interventions: NDArray[np.str_],
-) -> NDArray[np.int_]:
-
-    # select rows where gene is intervened
-    int_index = interventions == gene
-
-    # create observational and interventional data
-    dat_obs = dat_filtered[obs_index, :]
-    dat_int = dat_filtered[int_index, :]
-
-    # for each gene, check if dat_obs and dat_int have same distribution
-    return np.array(
-        [
-            ~have_same_dist(dat_obs[:, k], dat_int[:, k])
-            for k in range(dat_filtered.shape[1])
-        ]
-    )
-
-
 # %%
 def main(input_path: str, output_path: str, all_rows: bool = False):
 
     # %%
-    # input_path = "../../data/raw/genes/dataset_k562_filtered.npz"
+    input_path = "../data/raw/genes/dataset_k562_filtered.npz"
     # Load data
     dat = np.load(input_path)
     # %%
@@ -47,6 +20,7 @@ def main(input_path: str, output_path: str, all_rows: bool = False):
     obs_index = dat["interventions"] == "non-targeting"
     obs_data = dat["expression_matrix"][obs_index]
 
+    # %%
     # Keep only genes that have non-zero expression on observational data
     selected_genes_idx = np.where((obs_data > 0).mean(axis=0) == 1)[0]
     selected_genes_names = dat["var_names"][selected_genes_idx]
@@ -66,9 +40,17 @@ def main(input_path: str, output_path: str, all_rows: bool = False):
         axis=1,
     )
 
-    # %%
+    # Save csv
     # output_path = "../../data/processed/genes.csv"
     dat_df.to_csv(output_path, index=False)
+
+    # Save npz objects
+    np.savez(
+        output_path.replace(".csv", ".npz"),
+        expression_matrix=X,
+        interventions=Z,
+        var_names=selected_genes_names,
+    )
 
 
 # %%
