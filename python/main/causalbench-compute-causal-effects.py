@@ -85,9 +85,9 @@ def main(input_path: str, output_path: str):
 # %%
 if __name__ == "__main__":
 
-    input_path = "../data/raw/genes/dataset_k562_filtered.npz"
-    output_path = "../data/processed/causal-effect-matrix.csv"
-    main(input_path, output_path)
+    # input_path = "../data/processed/genes_all.npz"
+    # output_path = "../data/processed/causal-effect-matrix.npy"
+    # main(input_path, output_path)
 
     parser = argparse.ArgumentParser(description="Compute causal effect matrix")
     parser.add_argument(
