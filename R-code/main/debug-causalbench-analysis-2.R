@@ -19,6 +19,6 @@ dat2plot <- dat %>% filter(algo == "BCF") %>%
   filter(env %in% c("train", "test"), interv_strength %in% c(0, 0.9))
 
 ggplot(dat2plot) +
-  geom_point(aes(x = !!sym(genes[3]), y = !!sym(gene_y), col = env), 
+  geom_point(aes(x = !!sym(genes[3]), y = !!sym(genes[2]), col = env), 
              alpha = 0.5) +
   coord_cartesian(xlim = c(0, 5))
