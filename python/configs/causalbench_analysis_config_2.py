@@ -27,13 +27,13 @@ RNG = np.random.default_rng(SEED)
 
 
 # Params
-ADD_CONFOUNDERS = True
+ADD_CONFOUNDERS = False
 P = 3  # Number of predictors
 R = 1  # Number of training environments
 NUM_SETS = 1  # Number of sets of training environments
 ITERATIONS = 1  # Number of subsamples
 N_OBS_SUBSAMPLED = 1000
-TEST_PERCENTAGES = [0.1, 0.15, 0.2, 0.25, 0.3]
+TEST_PERCENTAGES = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
 PRED_SELECTOR = partial(ds.select_top_predictors_lasso, environment_column="Z")
 CANDIDATE_ENV_SELECTOR = ds.candidate_envs_inside_preds
 ENV_SELECTOR = ds.env_selector

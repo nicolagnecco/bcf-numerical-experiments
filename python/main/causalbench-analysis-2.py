@@ -243,7 +243,7 @@ def process_gene_environment(
         )
 
         # Get X_train, y_train, Z_train
-        train_mask = get_training_mask_random(X, Z, [test_env], 20)
+        train_mask = get_training_mask_random(X, Z, [test_env], 10)
 
         X_train = X[train_mask]
         y_train = y[train_mask]
