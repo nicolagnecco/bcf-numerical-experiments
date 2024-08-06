@@ -78,7 +78,7 @@ def get_training_mask_random(
         top_row_mask = X.index.isin(sampled_indices)
         range_mask |= top_row_mask
 
-    train_mask |= range_mask
+    train_mask |= range_mask  # type: ignore
 
     return train_mask
 
