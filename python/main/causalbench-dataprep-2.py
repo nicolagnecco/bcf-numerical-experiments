@@ -19,12 +19,12 @@ def main(
 
     # %%
     # Load data
-    # gene_path = "../data/processed/genes_all.npz"
+    # gene_path = "../data/processed/genes_no_zeros.npz"
     dat = np.load(gene_path)
     obs_index = dat["interventions"] == "non-targeting"
 
     # Load causal effects
-    # matrix_path = "../data/processed/causal-effect-matrix-2.npy"
+    # matrix_path = "../data/processed/causal-effect-matrix-no-zeros-median.npy"
     M = np.load(matrix_path)
 
     # %%
