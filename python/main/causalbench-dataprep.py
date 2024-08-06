@@ -12,7 +12,7 @@ from scipy.stats import ranksums
 def main(input_path: str, output_path: str, all_rows: bool = False):
 
     # %%
-    input_path = "../data/raw/genes/dataset_k562_filtered.npz"
+    # input_path = "../data/raw/genes/dataset_k562_filtered.npz"
     # Load data
     dat = np.load(input_path)
     # %%
