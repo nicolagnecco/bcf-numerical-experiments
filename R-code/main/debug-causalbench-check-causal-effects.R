@@ -1,8 +1,8 @@
 source("main/dependencies.R")
 
-dat <- read_csv("../data/processed/genes_causal_effect_full.csv")
+dat <- read_csv("../data/processed/genes_no_zeros_causal_effect_median.csv")
 
-dat %>% view()
+dat$Z %>% unique() %>% length()
 
 
 genes <- colnames(dat)[-ncol(dat)]
@@ -16,7 +16,7 @@ for (i in seq_along(genes)){
       dat_obs <- (dat %>% filter(Z == "non-targeting"))[, j][[1]]
       dat_int <- (dat %>% filter(Z == genes[i]))[, j][[1]]
       
-      M[i, j] <- abs(mean(dat_obs) - mean(dat_int))
+      M[i, j] <- abs(median(dat_obs) - median(dat_int))
     }
     
   }
@@ -25,8 +25,8 @@ for (i in seq_along(genes)){
 
 M %>% View()
 
-gene_1 <- genes[1]
-gene_2 <- genes[4]
+gene_1 <- genes[10]
+gene_2 <- genes[8]
 
 
 dat2plot <- dat %>% filter(Z %in% c("non-targeting", gene_1))
