@@ -114,6 +114,13 @@ def evaluate_model(
     }
 
 
+def pool_envs(Z: pd.DataFrame) -> pd.DataFrame:
+    new_Z = Z.copy()
+
+    new_Z["Z"] = new_Z["Z"].apply(lambda x: x if x == "non-targeting" else "others")
+    return new_Z
+
+
 def process_gene_environment(
     response_gene: str,
     predictors: List[str],
@@ -141,39 +148,30 @@ def process_gene_environment(
         for test_env in test_environments
     }
 
-    # For each test_env, fit and evaluate algos
+    # Get X_train, y_train, Z_train
+    X_train, y_train, Z_train = ds.subset_data(
+        response_gene=response_gene,
+        X=gene_data,
+        Z=env_data,
+        predictor_genes=predictors,
+        environment_genes=training_environments,
+    )
+
+    Z_train_enc = de.prepare_Z(pool_envs(Z_train))
+
     results = []
     df_preds = []
-    for test_env in tqdm(
-        test_environments, desc="Processing test environments", disable=True
-    ):
 
-        # Get X_train, y_train, Z_train
-        X_train, y_train, Z_train = ds.subset_data(
-            response_gene=response_gene,
-            X=gene_data,
-            Z=env_data,
-            predictor_genes=predictors,
-            environment_genes=training_environments,
-        )
-        Z_train_enc = de.prepare_Z(Z_train)
+    for algo_name, algo_factory in cfg.algorithms:
+        algo = algo_factory()
 
-        # Add confounders
-        confounders = None
-        if cfg.ADD_CONFOUNDERS:
-            confounders = [test_env]
-            X_train, y_train, Z_train = add_confounders(
-                X_train, y_train, Z_train, confounders
-            )
-
-        for algo_name, algo_factory in cfg.algorithms:
-
-            algo = algo_factory()
+        if not (cfg.ADD_CONFOUNDERS):
+            confounders = None
 
             # Fit on train
             algo.fit(X_train.to_numpy(), y_train.to_numpy().ravel(), Z_train_enc)
 
-            # !!! for debugging only
+            # for debugging only
             if cfg.DEBUG_PREDICTIONS:
                 if isinstance(algo.model, BCF):
                     M_0 = algo.model.M_0_
@@ -200,6 +198,7 @@ def process_gene_environment(
             train_results["iter_id"] = iter_id
             results.append(train_results)
 
+            # Save predictions for debugging
             if cfg.DEBUG_PREDICTIONS:
                 df_pred = df_predictions(
                     X=X_train,
@@ -212,10 +211,68 @@ def process_gene_environment(
                 )
                 df_preds.append(df_pred)
 
+        for test_env in tqdm(
+            test_environments, desc="Processing test environments", disable=True
+        ):
+            if cfg.ADD_CONFOUNDERS:
+                confounders = [test_env]
+
+                # create confounded data
+                X_train_conf, y_train_conf, Z_train_conf = add_confounders(
+                    X_train, y_train, Z_train, confounders
+                )
+
+                # Fit on train
+                algo.fit(
+                    X_train_conf.to_numpy(),
+                    y_train_conf.to_numpy().ravel(),
+                    Z_train_enc,
+                )
+
+                # for debugging only
+                if cfg.DEBUG_PREDICTIONS:
+                    if isinstance(algo.model, BCF):
+                        M_0 = algo.model.M_0_
+                    else:
+                        M_0 = None
+                else:
+                    M_0 = None
+
+                # Evaluate on train
+                train_results = evaluate_model(
+                    algo=algo,
+                    X=X_train_conf,
+                    y=y_train_conf,
+                    response_gene=response_gene,
+                    predictors=predictors,
+                    training_environments=training_environments,
+                    confounders=confounders,
+                    test_env="train",
+                    algo_name=algo_name,
+                    M_0=M_0,
+                    interv_strength=0,
+                )
+                train_results["run_id"] = run_id
+                train_results["iter_id"] = iter_id
+                results.append(train_results)
+
+                # Save predictions for debugging
+                if cfg.DEBUG_PREDICTIONS:
+                    df_pred = df_predictions(
+                        X=X_train_conf,
+                        y=y_train_conf,
+                        Z=Z_train_conf,
+                        algo_name=algo_name,
+                        algo=algo,
+                        setting="train",
+                        interv_strength=0,
+                    )
+                    df_preds.append(df_pred)
+
+            # Evaluate on test
             X_test, y_test, Z_test = list_test_data[test_env]
 
             for perc in cfg.TEST_PERCENTAGES:
-
                 test_mask = ds.get_test_mask_perc(
                     X_test,
                     Z_test,
@@ -256,7 +313,10 @@ def process_gene_environment(
     if cfg.DEBUG_PREDICTIONS:
         final_df = pd.concat(df_preds)
         final_df.to_csv(
-            os.path.join(debug_dir, f"debug_response_{response_gene}.csv"),
+            os.path.join(
+                debug_dir,
+                f"debug_response_{response_gene}-run_id_{run_id}-iter_id_{iter_id}.csv",
+            ),
             index=False,
         )
 
