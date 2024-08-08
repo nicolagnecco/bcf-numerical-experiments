@@ -1,8 +1,24 @@
 source("main/dependencies.R")
 
-dat <- read_csv("../data/processed/genes_no_zeros_causal_effect_median.csv")
+dat <- read_csv("../data/processed/genes.csv")
 
-dat$Z %>% unique() %>% length()
+row_sums <- rowSums(exp(dat[, -29]) - 1)
+hist(row_sums)
+
+dat_trans <- (exp(dat[, -29])-1) %>% as_tibble() %>% 
+  mutate(Z = dat$Z)
+
+training_rows <- sample(which(dat$Z == "non-targeting"), 1000)
+test_rows <- which(dat$Z == "ENSG00000122406")
+
+write_csv(dat_trans, "../data/processed/genes_exp.csv")
+
+ggplot(dat[c(training_rows, test_rows), ]) +
+  geom_point(aes(x = ENSG00000122406, y = ENSG00000144713, col = Z), alpha = .5)
+
+ggplot(dat_trans[c(training_rows, test_rows), ]) +
+  geom_point(aes(x = ENSG00000122406, y = ENSG00000144713, col = Z), alpha = .5)
+
 
 
 genes <- colnames(dat)[-ncol(dat)]
