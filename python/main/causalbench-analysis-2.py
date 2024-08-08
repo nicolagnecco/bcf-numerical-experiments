@@ -1,4 +1,5 @@
-#
+# TRAIN ENVS: SET OF ENVS IS ONE PRED AT A TIME (EITHER SMALL INTERVENTION OR RANDOM)
+# TEST ENVS: SET OF ENVS IS SAME PREDS BUT WITH DIFFERENT INTERVENTION STRENGTHS
 
 import concurrent.futures
 import itertools
@@ -243,7 +244,12 @@ def process_gene_environment(
         )
 
         # Get X_train, y_train, Z_train
-        train_mask = get_training_mask_random(X, Z, [test_env], 10)
+        if cfg.TRAIN_MASK == "random":
+            train_mask = get_training_mask_random(X, Z, [test_env], 10)
+        elif cfg.TRAIN_MASK == "top":
+            train_mask = get_training_mask(X, Z, [test_env], 10)
+        else:
+            raise ValueError(f"Invalid train mask: {cfg.TRAIN_MASK}")
 
         X_train = X[train_mask]
         y_train = y[train_mask]

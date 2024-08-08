@@ -13,13 +13,20 @@ from src.algorithms.oracle_methods import ConstantFunc
 from src.bcf.boosted_control_function_2 import BCF, OLS
 from xgboost.sklearn import XGBRegressor
 
-# Purpose: ...
+# Purpose:
+# DATA: always-active genes in observational -> no further selection -> exp(Z) - 1 transformation
+# PREDS: 3 predictors
+# TRAINING ENVS: 1 predictor at a time
+# TRAINING PREPROCESSING: keep top 10 points from training environemnt
+# CONFOUNDER: false
+# TEST ENVS: 1 predictor at a time with different intervention strengths
+
 
 TEST_RUN = False
 FIRST_TASK = 0
 LAST_TASK = 1
 SEQUENTIAL = False
-DEBUG_PREDICTIONS = False
+DEBUG_PREDICTIONS = True
 USE_NPZ = False
 
 SEED = 42  # from https://www.random.org/integers
@@ -33,18 +40,17 @@ R = 1  # Number of training environments
 NUM_SETS = 1  # Number of sets of training environments
 ITERATIONS = 1  # Number of subsamples
 N_OBS_SUBSAMPLED = 1000
-TEST_PERCENTAGES = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+TRAIN_MASK = "top"  # one of "top", "random"
+TEST_PERCENTAGES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 PRED_SELECTOR = partial(ds.select_top_predictors_lasso, environment_column="Z")
 CANDIDATE_ENV_SELECTOR = ds.candidate_envs_inside_preds
 ENV_SELECTOR = ds.env_selector
 
 # %%
 # Paths
-INPUT_DATA = "../data/processed/genes_all.csv"
+INPUT_DATA = "../data/processed/genes_exp.csv"
 INPUT_CONFIG = "configs/causalbench_analysis_config_2.py"
-RESULT_DIR = (
-    f"../results/causalbench-analysis-2/n_preds_{P}-confounders_{ADD_CONFOUNDERS}"
-)
+RESULT_DIR = f"../results/causalbench-analysis-2/n_preds_{P}-train_mask_{TRAIN_MASK}-confounders_{ADD_CONFOUNDERS}"
 RESULT_NAME = "causalbench-res.csv"
 OUTPUT_CONFIG = "_configs.py"
 
@@ -55,7 +61,7 @@ def create_bcf_0():
         BCF(
             n_exog=0,  # needs to know Z
             continuous_mask=np.repeat(True, 0),  # needs to know X
-            fx=LinearRegression(),
+            fx=RandomForestRegressor(),
             gv=LinearRegression(),
             fx_imp=RandomForestRegressor(),
             passes=2,
