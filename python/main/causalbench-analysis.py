@@ -1,4 +1,5 @@
-#
+# TRAIN ENVS: SET OF ENVS THAT CAN BE IN PREDS, NOT IN PREDS, OR BOTH
+# TEST ENVS: SET OF ENVS THAT IS IN PREDS
 
 import concurrent.futures
 import itertools
@@ -157,7 +158,10 @@ def process_gene_environment(
         environment_genes=training_environments,
     )
 
-    Z_train_enc = de.prepare_Z(pool_envs(Z_train))
+    if cfg.POOL:
+        Z_train_enc = de.prepare_Z(pool_envs(Z_train))
+    else:
+        Z_train_enc = de.prepare_Z(Z_train)
 
     results = []
     df_preds = []

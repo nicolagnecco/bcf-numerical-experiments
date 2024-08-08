@@ -13,13 +13,19 @@ from src.algorithms.oracle_methods import ConstantFunc
 from src.bcf.boosted_control_function_2 import BCF, OLS
 from xgboost.sklearn import XGBRegressor
 
-# Purpose: ...
+# Purpose:
+# DATA: always-active genes in observational -> select 10 with strongest connection
+# PREDS: 9 predictors
+# TRAINING ENVS: select 9 training environments outside predictors
+# TRAINING PREPROCESSING: no pooling
+# TEST ENVS: each predictor with different intervention strengths
+
 
 TEST_RUN = False
 FIRST_TASK = 0
 LAST_TASK = 1
 SEQUENTIAL = False
-DEBUG_PREDICTIONS = True
+DEBUG_PREDICTIONS = False
 USE_NPZ = False
 
 SEED = 4232  # from https://www.random.org/integers
@@ -29,20 +35,22 @@ RNG = np.random.default_rng(SEED)
 # Params
 ADD_CONFOUNDERS = False
 P = 9  # Number of predictors
-R = 5  # Number of training environments
+R = 9  # Number of training environments
 NUM_SETS = 10  # Number of sets of training environments
 ITERATIONS = 1  # Number of subsamples
 N_OBS_SUBSAMPLED = 1000
 TEST_PERCENTAGES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 PRED_SELECTOR = partial(ds.select_top_predictors_lasso, environment_column="Z")
 CANDIDATE_ENV_SELECTOR = ds.candidate_envs_outside_preds
+CANDIDATE_ENV_TYPE = "out"
+POOL = False
 ENV_SELECTOR = partial(ds.random_env_selector, num_sets=NUM_SETS, seed=RNG)
 
 # %%
 # Paths
-INPUT_DATA = "../data/processed/genes_causal_effect_full.csv"
+INPUT_DATA = "../data/processed/genes_no_zeros_causal_effect.csv"
 INPUT_CONFIG = "configs/causalbench_analysis_config.py"
-RESULT_DIR = f"../results/causalbench-analysis/n_preds_{P}-n_trainenv_{R}-confounders_{ADD_CONFOUNDERS}"
+RESULT_DIR = f"../results/causalbench-analysis/n_preds_{P}-n_trainenv_{R}-trainevs_{CANDIDATE_ENV_TYPE}-pool_training_{POOL}-confounders_{ADD_CONFOUNDERS}"
 RESULT_NAME = "causalbench-res.csv"
 OUTPUT_CONFIG = "_configs.py"
 
