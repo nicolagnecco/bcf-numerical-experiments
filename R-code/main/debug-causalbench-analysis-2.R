@@ -6,7 +6,7 @@ dat <- read_csv(
 )
 
 dat <- read_csv(
-  "../results/causalbench-analysis/n_preds_9-n_trainenv_5-confounders_False/20240806-120957/_debug/debug_response_ENSG00000042429-run_id_50-iter_id_0.csv"
+  "../results/causalbench-analysis-2/n_preds_3-train_mask_top-confounders_False/20240808-104520/_debug/debug-response_ENSG00000063177-run_id_23-iter_id_0.csv"
 )
 
 genes <- colnames(dat)[1:4]
@@ -25,10 +25,9 @@ dat2plot <- dat %>%
   unique() 
   
 
-ggplot(dat2plot) +
-  geom_point(aes(x = !!sym(genes[3]), y = !!sym(genes[2]), col = env), 
-             alpha = 0.5) +
-  coord_cartesian(xlim = c(0, 5))
+ggplot(dat2plot %>% filter(interv_strength %in% c(0, .2))) +
+  geom_point(aes(x = !!sym(genes[3]), y = !!sym(genes[1]), col = Z), 
+             alpha = 0.5) 
 
 
 # Look at predictions
@@ -45,8 +44,7 @@ dat_test <- dat %>%
   filter(env == "test")
 
 
-ggplot(dat) +
-  facet_grid(env~ algo) +
-  geom_point(aes(x = !!sym(genes[2]), y = !!sym(gene_y))) +
-  geom_point(aes(x = !!sym(genes[2]), y = y_pred, col = algo)) +
-  coord_cartesian(xlim = c(0, 5))
+ggplot(dat %>% filter(interv_strength %in% c(0, 0.5))) +
+  facet_grid(Z ~ algo) +
+  geom_point(aes(x = !!sym(genes[4]), y = !!sym(gene_y))) +
+  geom_point(aes(x = !!sym(genes[4]), y = y_pred, col = algo))
