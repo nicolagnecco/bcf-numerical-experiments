@@ -1,8 +1,19 @@
 source("main/dependencies.R")
 
 dat <- read_csv("../data/processed/genes.csv")
+dim(dat)
+
+# let x = count
+# y = x / sum_{1, ..., 1000}(x)
+# z = log(y + 1)
+# y = exp(z) - 1
+# sum_{1, ..., 28}(y) = sum_{1, ..., 28}(x) / sum_{1, ..., 1000}(x) < 1?
+
+# normalization removes batch effect. 
+# When doing PCA with raw count, the first two PCs are batch effect
 
 row_sums <- rowSums(exp(dat[, -29]) - 1)
+length(row_sums)
 hist(row_sums)
 
 dat_trans <- (exp(dat[, -29])-1) %>% as_tibble() %>% 
@@ -41,8 +52,8 @@ for (i in seq_along(genes)){
 
 M %>% View()
 
-gene_1 <- genes[10]
-gene_2 <- genes[8]
+gene_1 <- genes[7]
+gene_2 <- genes[5]
 
 
 dat2plot <- dat %>% filter(Z %in% c("non-targeting", gene_1))
@@ -55,6 +66,13 @@ dat2plot <- dat %>% filter(Z %in% c("non-targeting", gene_1))
 
 ggplot(dat2plot) +
   geom_point(aes(x = !!sym(gene_1), y = !!sym(gene_2), col = Z))
+
+
+dat2analyze <- dat %>% filter(Z %in% c("non-targeting"))
+summarise(dat2analyze %>% select(-Z) %>% as.matrix())
+
+
+
 
 # ?: do scale gene expr in Causalbench?
 # Per experiments they normalize them
