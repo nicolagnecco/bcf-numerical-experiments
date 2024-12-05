@@ -4,8 +4,9 @@ from typing import Any, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
-from sklearn.base import BaseEstimator, clone
+from sklearn.base import BaseEstimator, RegressorMixin, clone
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.model_selection import GridSearchCV
 from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
@@ -304,7 +305,7 @@ class BCF(BaseEstimator):
 
 @dataclass
 class OLS(BaseEstimator):
-    """Implementation of OLS learner control functions"""
+    """Implementation of OLS"""
 
     fx: ModelRegressor = RandomForestRegressor()
 
@@ -340,3 +341,101 @@ class OLS(BaseEstimator):
             X = check_array(X, accept_sparse=True)
 
         return self.fx_.predict(X)
+
+
+class MeanModel(BaseEstimator, RegressorMixin):
+    """
+    A simple regression model that always predicts the mean of the training targets.
+
+    This model serves as a baseline for regression tasks, providing a reference
+    point to evaluate the performance of more complex models.
+    """
+
+    def __init__(self):
+        """
+        Initialize the MeanModel.
+
+        Attributes:
+        ----------
+        mean_ : float
+            The mean of the target values computed during fitting.
+        """
+        self.mean_ = None
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -> "MeanModel":
+        """
+        Fit the model by computing the mean of the target values.
+
+        Parameters:
+        ----------
+        X : np.ndarray, shape (n_samples, n_features)
+            Training data. (Not used in this model.)
+        y : np.ndarray, shape (n_samples,)
+            Target values.
+
+        Returns:
+        -------
+        self : MeanModel
+            Fitted estimator.
+        """
+        self.mean_ = np.mean(y)
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """
+        Predict using the mean of the training targets.
+
+        Parameters:
+        ----------
+        X : np.ndarray, shape (n_samples, n_features)
+            Samples for which to make predictions.
+
+        Returns:
+        -------
+        y_pred : np.ndarray, shape (n_samples,)
+            Predicted values, which are all equal to the mean of the training targets.
+
+        Raises:
+        ------
+        NotFittedError
+            If the model is used before calling `fit`.
+        """
+        if self.mean_ is None:
+            raise NotFittedError(
+                "This MeanModel instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator."
+            )
+
+        return np.full(shape=(X.shape[0],), fill_value=self.mean_, dtype=float)
+
+    def get_params(self, deep: bool = True) -> dict:
+        """
+        Get parameters for this estimator.
+
+        Parameters:
+        ----------
+        deep : bool, default=True
+            If True, will return the parameters for this estimator and
+            contained subobjects that are estimators.
+
+        Returns:
+        -------
+        params : dict
+            Parameter names mapped to their values.
+        """
+        return {}
+
+    def set_params(self, **parameters) -> "MeanModel":
+        """
+        Set the parameters of this estimator.
+
+        Parameters:
+        ----------
+        **parameters : dict
+            Estimator parameters.
+
+        Returns:
+        -------
+        self : MeanModel
+            Estimator instance.
+        """
+        return self
