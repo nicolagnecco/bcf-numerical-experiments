@@ -36,7 +36,7 @@ SPLIT_CRITERIONS = [
 MASK = np.repeat(True, 7)
 
 # Define the number of repetitions
-B = 2  # You can adjust this value as needed
+B = 10  # You can adjust this value as needed
 
 # Define the validation as percentage training samples
 VAL_PRECENTAGE = 0.2
