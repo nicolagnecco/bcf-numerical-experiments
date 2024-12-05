@@ -12,7 +12,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import OneHotEncoder
-from src.bcf.boosted_control_function_2 import BCF, OLS
+from src.bcf.boosted_control_function_2 import BCF, OLS, MeanModel
 from xgboost import XGBRegressor
 
 # Constants and function definitions
@@ -36,6 +36,44 @@ SPLIT_CRITERIONS = [
     "rest/NW",
 ]
 MASK = np.repeat(True, 7)
+
+# Define a list of models globally
+MODELS = [
+    {
+        "name": "BCF",
+        "instance": BCF(
+            n_exog=2,  # Assuming Z_train has 2 features: Latitude and Longitude
+            continuous_mask=MASK,
+            fx=XGBRegressor(learning_rate=0.025),
+            gv=XGBRegressor(learning_rate=0.05),
+            fx_imp=XGBRegressor(learning_rate=0.05),
+            passes=10,
+        ),
+    },
+    {
+        "name": "BCF-lin",
+        "instance": BCF(
+            n_exog=2,
+            continuous_mask=MASK,
+            fx=Ridge(),
+            gv=Ridge(),
+            fx_imp=XGBRegressor(learning_rate=0.05),
+            passes=10,
+        ),
+    },
+    {
+        "name": "LS",
+        "instance": OLS(fx=XGBRegressor(learning_rate=0.05)),
+    },
+    {
+        "name": "OLS",
+        "instance": OLS(fx=Ridge()),
+    },
+    {
+        "name": "AVE",
+        "instance": MeanModel(),
+    },
+]
 
 
 def load_data():
@@ -128,142 +166,68 @@ def get_model(model_type: List[str], base_estimator: BaseEstimator, param_grid=N
     return base_estimator
 
 
-def define_fit_models(
-    X_train: pd.DataFrame, y_train: pd.Series, Z_train: pd.DataFrame
-) -> Tuple[BCF, BCF, OLS, OLS]:
-    # BCF
-    bcf = BCF(
-        n_exog=Z_train.shape[1],
-        continuous_mask=MASK,
-        fx=XGBRegressor(learning_rate=0.025),
-        gv=XGBRegressor(learning_rate=0.05),
-        fx_imp=XGBRegressor(learning_rate=0.05),
-        passes=10,
-    )
+def fit_model(
+    model: dict, X_train: pd.DataFrame, y_train: pd.Series, Z_train: pd.DataFrame
+):
+    """Fit a single model on the training data."""
+    model_instance = model["instance"]
+    model_name = model["name"]
 
-    bcf.fit(np.hstack([X_train, Z_train]), y_train.ravel())
-
-    print(f"Rank M_0: {bcf.q_opt_}")
-
-    # BCF-lin
-    bcf_lin = BCF(
-        n_exog=Z_train.shape[1],
-        continuous_mask=MASK,
-        fx=Ridge(),
-        gv=Ridge(),
-        fx_imp=XGBRegressor(learning_rate=0.05),
-        passes=10,
-    )
-
-    bcf_lin.fit(np.hstack([X_train, Z_train]), y_train.ravel())
-
-    # Input covariates for other models
-    input_covariates = (
-        X_train.to_numpy() if NO_LAT_LON else np.hstack([X_train, Z_train])
-    )
-
-    # LS
-    ls = OLS(fx=XGBRegressor(learning_rate=0.05))
-
-    ls.fit(input_covariates, y_train.ravel())
-
-    # OLS
-    ols = OLS(fx=Ridge())
-    ols.fit(input_covariates, y_train.ravel())
-
-    # Ave
-
-    return bcf, bcf_lin, ls, ols
+    if isinstance(model_instance, BCF):
+        # BCF models require combined X and Z
+        input_data = np.hstack([X_train, Z_train])
+        model_instance.fit(input_data, y_train.ravel())
+        print(f"Model {model_name} fitted. Rank M_0: {model_instance.q_opt_}")
+    else:
+        # Other models use X or [X, Z] based on NO_LAT_LON
+        input_covariates = (
+            X_train.to_numpy() if NO_LAT_LON else np.hstack([X_train, Z_train])
+        )
+        model_instance.fit(input_covariates, y_train.ravel())
+        print(f"Model {model_name} fitted.")
 
 
-def predict_models(
-    bcf: BCF, bcf_lin: BCF, ls: OLS, ols: OLS, X: pd.DataFrame, Z: pd.DataFrame
-) -> pd.DataFrame:
-    # BCF
-    f_0 = bcf.fx_.predict(X)
+def predict_model(model: dict, X: pd.DataFrame, Z: pd.DataFrame) -> pd.Series:
+    """Generate predictions using a single model."""
+    model_instance = model["instance"]
+    model_name = model["name"]
 
-    columns_to_select = X.columns[bcf.continuous_mask].tolist()
-    filtered_df = X[columns_to_select]
-
-    f_imp = bcf.fx_imp_.predict((filtered_df - bcf.X_mean_) @ bcf.R_)
-
-    f_bcf = bcf.predict(X.to_numpy())
-
-    # BCF-lin
-    f_bcf_lin = bcf_lin.predict(X.to_numpy())
-
-    # Input covariates for other models
-    input_covariates = X.to_numpy() if NO_LAT_LON else np.hstack([X, Z])
-
-    # LS
-    f_ls = ls.predict(input_covariates)
-
-    # OLS
-    f_ols = ols.predict(input_covariates)
-
-    return pd.DataFrame(
-        {
-            "f_0": f_0,
-            "IMP": f_imp,
-            "BCF": f_bcf,
-            "BCF-lin": f_bcf_lin,
-            "LS": f_ls,
-            "OLS": f_ols,
-        },
-        index=X.index,
-    )
+    if isinstance(model_instance, BCF):
+        f_bcf = model_instance.predict(X.to_numpy())
+        return pd.Series(f_bcf, index=X.index, name=model_name)
+    else:
+        input_covariates = X.to_numpy() if NO_LAT_LON else np.hstack([X, Z])
+        predictions = model_instance.predict(input_covariates)
+        return pd.Series(predictions, index=X.index, name=model_name)
 
 
-def eval_models(bcf, bcf_lin, ls, ols, X, y, Z, y_train, rep) -> List:
-    # Input covariates for models other than BCF
-    input_covariates = X if NO_LAT_LON else np.hstack([X, Z])
+def evaluate_model(
+    model: dict,
+    X: pd.DataFrame,
+    y: pd.Series,
+    Z: pd.DataFrame,
+    y_train: pd.Series,
+    rep: str,
+) -> dict:
+    """Evaluate a single model and return its MSE and standard error."""
+    model_instance = model["instance"]
+    model_name = model["name"]
 
-    bcf_mse = eval_model(bcf, np.hstack([X, Z]), y)
-    bcf_lin_mse = eval_model(bcf_lin, np.hstack([X, Z]), y)
-    ls_mse = eval_model(ls, input_covariates, y)
-    ols_mse = eval_model(ols, input_covariates, y)
-    ave_mse = ((y - np.mean(y_train)) ** 2).mean()
+    if isinstance(model_instance, BCF):
+        y_pred = model_instance.predict(np.hstack([X, Z]))
+    else:
+        input_covariates = X.to_numpy() if NO_LAT_LON else np.hstack([X, Z])
+        y_pred = model_instance.predict(input_covariates)
 
-    ave_standard_error = ((y - np.mean(y_train)) ** 2).std() / np.sqrt(len(y))
+    mse = ((y_pred - y) ** 2).mean()
+    se = ((y_pred - y) ** 2).std() / np.sqrt(len(y))
 
-    print(f"BCF: {bcf_mse}")
-    print(f"BCF-lin: {bcf_lin_mse}")
-    print(f"LS: {ls_mse}")
-    print(f"OLS: {ols_mse}")
-    print(f"Ave: {ave_mse}")
-
-    return [
-        {
-            "Rep": rep,
-            "Method": "BCF",
-            "MSE": bcf_mse,
-            "MSE_standard_error": mse_standard_error(bcf, np.hstack([X, Z]), y),
-        },
-        {
-            "Rep": rep,
-            "Method": "BCF-lin",
-            "MSE": bcf_lin_mse,
-            "MSE_standard_error": mse_standard_error(bcf_lin, np.hstack([X, Z]), y),
-        },
-        {
-            "Rep": rep,
-            "Method": "LS",
-            "MSE": ls_mse,
-            "MSE_standard_error": mse_standard_error(ls, input_covariates, y),
-        },
-        {
-            "Rep": rep,
-            "Method": "OLS",
-            "MSE": ols_mse,
-            "MSE_standard_error": mse_standard_error(ols, input_covariates, y),
-        },
-        {
-            "Rep": rep,
-            "Method": "AVE",
-            "MSE": ave_mse,
-            "MSE_standard_error": ave_standard_error,
-        },
-    ]
+    return {
+        "Rep": rep,
+        "Method": model_name,
+        "MSE": mse,
+        "MSE_standard_error": se,
+    }
 
 
 def main():
@@ -282,43 +246,50 @@ def main():
         print(f"Train: {X_train.shape[0]}")
         print(f"Test: {X_test.shape[0]}")
 
-        # fit models on training
-        bcf, bcf_lin, ls, ols = define_fit_models(X_train, y_train, Z_train)
+        for model in MODELS:
+            model_name = model["name"]
+            print(f"\nFitting Model: {model_name}")
+            fit_model(model, X_train, y_train, Z_train)
 
-        # predict models on training
-        f_hats = predict_models(bcf, bcf_lin, ls, ols, X_train, Z_train)
-        if SAVE_PREDICTIONS:
-            pd.concat([y_train, X_train, Z_train, f_hats], axis=1).to_csv(  # type: ignore
-                f"{RESULT_PATH}train_data_{i}{'_noLatLon' if NO_LAT_LON else ''}.csv",
-                index=False,
+            # Predict on Training Data
+            y_pred_train = predict_model(model, X_train, Z_train)
+            if SAVE_PREDICTIONS:
+                train_predictions = pd.concat(
+                    [y_train, X_train, Z_train, y_pred_train], axis=1
+                )
+                train_predictions.to_csv(
+                    f"{RESULT_PATH}train_data_{i}_{model_name}{'_noLatLon' if NO_LAT_LON else ''}.csv",
+                    index=False,
+                )
+
+            # Evaluate on Training Data
+            print(f"Evaluating Model: {model_name} on Training Data")
+            eval_train = evaluate_model(
+                model, X_train, y_train, Z_train, y_train, split_crit
             )
+            mse_training.append(eval_train)
 
-        # evaluate models on training
-        print("=================")
-        print(f"Train {split_crit}")
-        mse_training += eval_models(
-            bcf, bcf_lin, ls, ols, X_train, y_train, Z_train, y_train, split_crit
-        )
-        print("=================")
+            # Predict on Testing Data
+            y_pred_test = predict_model(model, X_test, Z_test)
+            if SAVE_PREDICTIONS:
+                test_predictions = pd.concat(
+                    [y_test, X_test, Z_test, y_pred_test], axis=1
+                )
+                test_predictions.to_csv(
+                    f"{RESULT_PATH}test_data_{i}_{model_name}{'_noLatLon' if NO_LAT_LON else ''}.csv",
+                    index=False,
+                )
 
-        # predict models on test
-        f_hats = predict_models(bcf, bcf_lin, ls, ols, X_test, Z_test)
-        if SAVE_PREDICTIONS:
-            pd.concat([y_test, X_test, Z_test, f_hats], axis=1).to_csv(
-                f"{RESULT_PATH}test_data_{i}{'_noLatLon' if NO_LAT_LON else ''}.csv",
-                index=False,
+            # Evaluate on Testing Data
+            print(f"Evaluating Model: {model_name} on Testing Data")
+            eval_test = evaluate_model(
+                model, X_test, y_test, Z_test, y_train, split_crit
             )
+            mse_test.append(eval_test)
 
-        # evaluate models on test
-        print("=================")
-        print(f"Test {split_crit}")
-        mse_test += eval_models(
-            bcf, bcf_lin, ls, ols, X_test, y_test, Z_test, y_train, split_crit
-        )
-        print("=================")
-
-    pd.DataFrame(mse_training).to_csv(f"{RESULT_PATH}training_mse.csv", index=False)
-    pd.DataFrame(mse_test).to_csv(f"{RESULT_PATH}test_mse.csv", index=False)
+    # Save evaluation results
+    pd.DataFrame(mse_training).to_csv(f"{RESULT_PATH}training_mse-new.csv", index=False)
+    pd.DataFrame(mse_test).to_csv(f"{RESULT_PATH}test_mse-new.csv", index=False)
 
 
 if __name__ == "__main__":
