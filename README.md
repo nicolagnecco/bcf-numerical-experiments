@@ -1,17 +1,19 @@
-# Boosted Control Functions – Numerical experiments
+# Boosted Control Functions: <br> Distribution generalization and invariance in confounded models
+
 
 The goal of this repository is to reproduce the numerical experiments from <a href="#ref1">[1]</a><a id="ref1-back"></a>.
 
 If you use this software in your work, please cite it using the following metadata.
 
 ```bibtex
-@misc{gnecco2023boosted,
-      title={Boosted Control Functions}, 
+@misc{gnecco2024boostedcontrolfunctionsdistribution,
+      title={Boosted Control Functions: Distribution generalization and invariance in confounded models}, 
       author={Nicola Gnecco and Jonas Peters and Sebastian Engelke and Niklas Pfister},
-      year={2023},
+      year={2024},
       eprint={2310.05805},
       archivePrefix={arXiv},
-      primaryClass={stat.ML}
+      primaryClass={stat.ML},
+      url={https://arxiv.org/abs/2310.05805}, 
 }
 ```
 
@@ -224,5 +226,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) f
 
 
 ## References
-<a id="ref1"></a><a href="#ref1-back">[1]</a>: Nicola Gnecco, Jonas Peters, Sebastian Engelke, and Niklas Pfister. 2023. "Boosted Control Functions." arXiv Preprint [https://arxiv.org/abs/2310.05805].
+<a id="ref1"></a><a href="#ref1-back">[1]</a>: Nicola Gnecco, Jonas Peters, Sebastian Engelke, and Niklas Pfister. 2024. "Boosted Control Functions: Distribution generalization and invariance in confounded models." arXiv Preprint [https://arxiv.org/abs/2310.05805].
 
