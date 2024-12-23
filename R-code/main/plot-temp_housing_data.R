@@ -8,7 +8,7 @@ FIG_NAME <- "../results/figures/housing_methods.pdf"
 
 
 # We consider the following train/test splits:
-AREA_LBLS <- c(
+AREA_LVLS <- c(
     "North/South",
     "South/North",
     "East/West",
@@ -21,6 +21,21 @@ AREA_LBLS <- c(
     "rest/NE",
     "NW/rest",
     "rest/NW"
+)
+
+AREA_LBLS <- c(
+  "N/S",
+  "S/N",
+  "E/W",
+  "W/E",
+  "SE/(N+SW)",
+  "(N+SW)/SE",
+  "SW/(N+SE)",
+  "(N+SE)/SW",
+  "NE/(S+NW)",
+  "(S+NW)/NE",
+  "NW/(S+NE)",
+  "(S+NE)/NW"
 )
 
 # Read data
@@ -39,7 +54,7 @@ dat_mse <-
     unnest_wider(parts, names_sep = "_") %>%
     select(-Rep) %>%
     rename(Split = parts_1, Rep = parts_2) %>%
-    mutate(Split = factor(Split, levels = AREA_LBLS, labels = AREA_LBLS))
+    mutate(Split = factor(Split, levels = AREA_LVLS, labels = AREA_LBLS))
 
 # Aggregate over repetitions
 dat <- dat_mse %>%
@@ -94,7 +109,11 @@ gg <- ggplot(dat_methods %>% arrange(Method)) +
         colour = "Methods", shape = "Methods", fill = "Methods",
         x = "Geographic Split",
         y = "MSE"
-    )
+    ) +
+  theme(
+    axis.ticks.x = element_line(linewidth = 0.25)
+  ) +
+  scale_x_discrete(breaks = unique(dat_methods$Split))
 gg
 
 save_myplot(
