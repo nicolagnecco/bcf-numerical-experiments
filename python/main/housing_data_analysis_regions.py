@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 from sklearn.base import BaseEstimator
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import train_test_split
 from src.bcf.boosted_control_function_2 import BCF, OLS, MeanModel
@@ -53,9 +54,9 @@ def get_models() -> List[dict]:
             "instance": BCF(
                 n_exog=2,  # Latitude and Longitude
                 continuous_mask=MASK,
-                fx=XGBRegressor(learning_rate=0.025),
-                gv=XGBRegressor(learning_rate=0.05),
-                fx_imp=XGBRegressor(learning_rate=0.05),
+                fx= RandomForestRegressor(n_estimators=10), #XGBRegressor(learning_rate=0.025),
+                gv= RandomForestRegressor(n_estimators=10), #XGBRegressor(learning_rate=0.05),
+                fx_imp= RandomForestRegressor(n_estimators=10), #XGBRegressor(learning_rate=0.05),
                 passes=10,
             ),
         },
@@ -72,7 +73,7 @@ def get_models() -> List[dict]:
         },
         {
             "name": "LS",
-            "instance": OLS(fx=XGBRegressor(learning_rate=0.05)),
+            "instance": OLS(fx=RandomForestRegressor(n_estimators=10)),#XGBRegressor(learning_rate=0.05)),
         },
         {
             "name": "OLS",
