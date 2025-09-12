@@ -6,7 +6,8 @@ from typing import List, Optional, Tuple, Union
 import numpy as np
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import OneHotEncoder
-from src.algorithms.oracle_methods import CausalFunction, ConstantFunc, IMPFunction
+from src.algorithms.oracle_methods import (CausalFunction, ConstantFunc,
+                                           IMPFunction)
 from src.bcf.boosted_control_function_2 import BCF, OLS
 from src.bcf.reduced_rank_regression import RRR
 from src.scenarios.generate_data import generate_data_Z_Gaussian
