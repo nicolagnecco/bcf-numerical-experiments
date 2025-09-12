@@ -24,4 +24,3 @@ def split_X_and_Z(X: np.ndarray, n_exog: int) -> Tuple[np.ndarray, np.ndarray]:
     X_original = X[:, :-n_exog]
     Z = X[:, -n_exog:]
     return X_original, Z
-    return X_original, Z
