@@ -3,7 +3,9 @@ from dataclasses import dataclass
 import numpy as np
 import scipy.linalg as la
 from sklearn.base import BaseEstimator
+from sklearn.model_selection import GridSearchCV
 from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
+from src.scenarios.generate_helpers import decompose_mat
 
 
 @dataclass
@@ -177,3 +179,53 @@ class RRR_old(BaseEstimator):
             Z = check_array(Z, accept_sparse=True)
 
         return Z @ self.M_hat_.T
+
+
+def cross_validate_rrr(X: np.ndarray, Z: np.ndarray, alphas: np.ndarray) -> RRR:
+    """
+    Return a fitted reduced rank regression object `RRR` with cross-validated parameter `alpha`.
+
+    Parameters:
+    -----------
+    X (np.ndarray): The matrix of continuous features.
+
+    Z (np.ndarray): The matrix of instrumental variables.
+
+    alphas (np.ndarray): Regularization strength parameters for reduced rank regression.
+
+    Returns:
+    -----------
+    RRR
+        Fitted reduced rank regression object with cross-validated `alpha`.
+    """
+    parameters = {"alpha": alphas}
+
+    red_rank_reg = RRR()
+
+    clf = GridSearchCV(red_rank_reg, parameters, scoring="neg_root_mean_squared_error")
+
+    clf.fit(Z, X)
+
+    return clf.best_estimator_
+
+
+def learn_ker_M_0_T(M_0: np.ndarray) -> np.ndarray:
+    """
+    Learn the matrix spanning the null space of `M_0.T`.
+
+    Parameters:
+    -----------
+    M_0 : numpy.ndarray
+        The estimated matrix M_0 from the reduced rank regression.
+
+    Returns:
+    --------
+    numpy.ndarray
+        Matrix R spanning the null space of M_0 transpose. Returns a zero matrix if the null space is empty.
+    """
+    S, R = decompose_mat(M_0)
+
+    if R.shape[1] == 0:
+        return np.zeros((M_0.shape[0], 1))
+
+    return R

@@ -10,10 +10,9 @@ from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.model_selection import GridSearchCV
 from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
-from src.bcf.reduced_rank_regression import RRR
-from src.scenarios.generate_helpers import decompose_mat
+from src.bcf.helpers import split_X_and_Z
+from src.bcf.reduced_rank_regression import cross_validate_rrr, learn_ker_M_0_T
 from tqdm import tqdm
-from xgboost import XGBRegressor
 
 ModelRegressor = Any
 
@@ -144,7 +143,7 @@ class BCF(BaseEstimator):
             X, y = check_X_y(X, y)
 
         # Split concatenated [X, Z] back into X and Z
-        X_original, Z = self._split_X_and_Z(X, self.n_exog)
+        X_original, Z = split_X_and_Z(X, self.n_exog)
 
         # Store number of columns associated to X_original
         self.n_X_cols_ = X_original.shape[1]
@@ -153,14 +152,14 @@ class BCF(BaseEstimator):
         X_continuous = X_original[:, self.continuous_mask]
 
         # learn `M_0` and `q_opt_`, i.e., rank of M_0
-        rrr = self._cross_validate_rrr(X_continuous, Z, self.alphas)
+        rrr = cross_validate_rrr(X_continuous, Z, self.alphas)
         self.M_0_, self.q_opt_, self.X_mean_ = rrr.M_hat_, rrr.k_opt_, rrr.X_mean_
 
         # compute control variables V
         V = X_continuous - rrr.predict(Z)
 
         # learn R (matrix spanning null space of M_0.T)
-        self.R_ = self._learn_ker_M_0_T(self.M_0_)
+        self.R_ = learn_ker_M_0_T(self.M_0_)
 
         # Step 0
         f_X = np.mean(y)
@@ -215,7 +214,7 @@ class BCF(BaseEstimator):
         if X.shape[1] == self.n_X_cols_:
             X_pred = X
         elif X.shape[1] == self.n_X_cols_ + self.n_exog:
-            X_pred = self._split_X_and_Z(X, self.n_exog)[0]
+            X_pred = split_X_and_Z(X, self.n_exog)[0]
         else:
             raise ValueError("Unexpected number of columns in the input data.")
 
@@ -226,81 +225,6 @@ class BCF(BaseEstimator):
         return self.fx_.predict(X_pred) + self.fx_imp_.predict(
             (X_continuous - self.X_mean_) @ self.R_
         )
-
-    @staticmethod
-    def _split_X_and_Z(X: np.ndarray, n_exog: int) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Split the concatenated [X, Z] matrix into separate X and Z.
-
-        Parameters:
-        -----------
-        X : numpy.ndarray
-            The concatenated [X, Z] matrix.
-
-        n_exog : int
-            Number of exogenous variables.
-
-        Returns:
-        --------
-        Tuple[numpy.ndarray, numpy.ndarray]
-            A tuple containing the split X and Z matrices.
-        """
-        # Split `X = [X, Z]` into `X_original` and `Z` knowing the number of cols in `Z`
-        X_original = X[:, :-n_exog]
-        Z = X[:, -n_exog:]
-        return X_original, Z
-
-    @staticmethod
-    def _cross_validate_rrr(X: np.ndarray, Z: np.ndarray, alphas: np.ndarray) -> RRR:
-        """
-        Return a fitted reduced rank regression object `RRR` with cross-validated parameter `alpha`.
-
-        Parameters:
-        -----------
-        X (np.ndarray): The matrix of continuous features.
-
-        Z (np.ndarray): The matrix of instrumental variables.
-
-        alphas (np.ndarray): Regularization strength parameters for reduced rank regression.
-
-        Returns:
-        -----------
-        RRR
-            Fitted reduced rank regression object with cross-validated `alpha`.
-        """
-        parameters = {"alpha": alphas}
-
-        red_rank_reg = RRR()
-
-        clf = GridSearchCV(
-            red_rank_reg, parameters, scoring="neg_root_mean_squared_error"
-        )
-
-        clf.fit(Z, X)
-
-        return clf.best_estimator_
-
-    @staticmethod
-    def _learn_ker_M_0_T(M_0: np.ndarray) -> np.ndarray:
-        """
-        Learn the matrix spanning the null space of `M_0.T`.
-
-        Parameters:
-        -----------
-        M_0 : numpy.ndarray
-            The estimated matrix M_0 from the reduced rank regression.
-
-        Returns:
-        --------
-        numpy.ndarray
-            Matrix R spanning the null space of M_0 transpose. Returns a zero matrix if the null space is empty.
-        """
-        S, R = decompose_mat(M_0)
-
-        if R.shape[1] == 0:
-            return np.zeros((M_0.shape[0], 1))
-
-        return R
 
 
 @dataclass
