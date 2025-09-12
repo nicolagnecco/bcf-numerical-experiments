@@ -146,13 +146,13 @@ class BCFMLP(BaseEstimator):
 
 
 @dataclass
-class OLS_MLP(BaseEstimator):
+class OLSMLP(BaseEstimator):
     """Implementation of OLS"""
 
     fx_factory: Callable[[int], MLP]
     continuous_mask: NDArray[np.bool_]
     weight_decay: float = 1e-4
-    lr_step: float = 1e-3
+    lr: float = 1e-3
     epochs: int = 100
 
     def __post_init__(self):
@@ -190,7 +190,7 @@ class OLS_MLP(BaseEstimator):
             X=torch.from_numpy(X_scaled).float(),
             y=torch.from_numpy(y_centered).float(),
             weight_decay=self.weight_decay,
-            lr=self.lr_step,
+            lr=self.lr,
             epochs=self.epochs,
         )
 
