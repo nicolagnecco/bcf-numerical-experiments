@@ -11,108 +11,18 @@ import torch.nn as nn
 from mpl_toolkits.mplot3d import Axes3D  # registers the 3D projection
 from numpy.random import BitGenerator, Generator, SeedSequence
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
+from src.algorithms.oracle_methods import IMPFunctionNonLin
 from src.bcf.boosted_control_function_2 import BCF, OLS
 from src.bcf.boosted_control_function_mlp import BCFMLP, OLSMLP
 from src.bcf.mlp import MLP
-from src.scenarios.generate_data import generate_data, generate_data_Z_Gaussian
-from src.scenarios.generate_helpers import decompose_mat
+from src.scenarios.generate_data import generate_data_radial_f
+from src.scenarios.generate_helpers import radial2D
 
 # Graphical settings
 sns.set_theme(style="darkgrid")
 
 
-# %% ---- Class definitions
-@dataclass
-class IMPFunctionNonLin:
-    """Oracle for IMP function"""
-
-    causal_function: Callable[[np.ndarray], np.ndarray]
-    instrument_matrix: np.ndarray = np.array([])
-    confounder_cov: np.ndarray = np.array([])
-    confounder_effect: np.ndarray = np.array([])
-    name: str = "imp_function"
-    is_fitted_: bool = False
-
-    def fit(self, X, y):
-        # perform checks
-        X, y = check_X_y(X, y)
-        n, p = X.shape
-
-        M = self.instrument_matrix
-        S = self.confounder_cov
-        gamma = self.confounder_effect
-
-        # compute imp
-        if M.shape[1] > 0 and M.shape[1] <= p:
-            Q, R = decompose_mat(M)
-            self.delta_ = R @ np.linalg.inv(R.T @ S @ R) @ R.T @ S @ gamma
-            # print(f"Delta IMP: {self.delta_}")
-        else:
-            self.delta_ = np.zeros(shape=(p,))
-
-        self.is_fitted_ = True
-
-    def predict(self, X):
-        # perform checks
-        X = check_array(X, accept_sparse=True)
-        check_is_fitted(self, "is_fitted_")  # type: ignore
-
-        # predict data
-        return self.causal_function(X) + (X @ self.delta_).ravel()
-
-
 # %% ---- Function definitions
-# Copyright: https://github.com/sorawitj/HSIC-X/blob/master/experiments/distribution_generalization_nonlinear.py#L32
-# Modified function name and X1 definition
-def generate_data_nonlinear(
-    n,
-    int_par,
-    f,
-    seed: Optional[Union[int, SeedSequence, BitGenerator, Generator]] = None,
-):
-    rng = np.random.default_rng(seed)
-    indicator = rng.binomial(1, int_par / 4, size=n)
-    Z1 = rng.uniform(0, int_par, size=n)
-    Z2 = rng.uniform(int_par, 4, size=n)
-    Z = Z1
-    Z[indicator == 1] = Z2[indicator == 1]
-    U1 = rng.normal(size=n)
-    U2 = rng.normal(size=n)
-
-    X1 = 1.0 * Z + 1.0 * U1 + 0.0 * rng.normal(size=n)
-    X2 = 1.0 * U2 + 0.0 * rng.normal(size=n)
-    X = np.vstack([X1, X2]).T
-    Y = f(X) + U1 + U2
-
-    return X, Y, Z
-
-
-def radial2D(
-    num_basis: int,
-    x_min=[-5, -5],
-    x_max=[5, 5],
-    seed: Optional[Union[int, SeedSequence, BitGenerator, Generator]] = None,
-):
-    # Copyright: https://github.com/sorawitj/HSIC-X/blob/master/experiments/distribution_generalization_nonlinear.py#L142
-    # We modified the arguments
-    def radial2D_helper(X, centres, num_basis):
-        Phi = np.zeros((X.shape[0], num_basis))
-        for i in range(num_basis):
-            Phi[:, i : i + 1] = np.exp(
-                -1 * (np.linalg.norm(X - centres[i], axis=1, keepdims=True) / 3) ** 2
-            )
-
-        return Phi
-
-    rng = np.random.default_rng(seed)
-    centres = rng.uniform(low=x_min, high=x_max, size=(num_basis, 2))
-    w = rng.normal(0, 4, size=num_basis)
-    f = lambda x: radial2D_helper(x, centres, num_basis) @ w
-
-    return f
-
-
 def eval_model(y_hat, y_test):
     mse = float(((y_hat - y_test) ** 2).mean())
     return mse
@@ -182,19 +92,18 @@ n_train = 1000
 n_test = 1000
 intvec = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 3.99]
 num_basis = 10
-S = np.eye(2)
-M = np.array([[1.0], [0.0]])
-gamma = np.array([[1, 1]]).T
+rng = np.random.default_rng(None)
+seed_torch = 42
 
 
-# %% Generate training data
-f = radial2D(num_basis=num_basis)
-
-# %%
-X, y, Z = generate_data_nonlinear(n_train, 3.99, f)
+# %% Generate random function f and oracle quantities
+f = radial2D(num_basis=num_basis, seed=rng)
+X, y, Z, S, M, gamma = generate_data_radial_f(n_train, 3.5, f, noise_sd=0.1, seed=rng)
 Z = Z[:, np.newaxis]
-# %% ---- plot training data
-plot_data(X, y, f)
+# %%
+if use_plotly:
+    plot_data(X, y, f)
+
 
 # %% ---- define methods
 fx_factory = lambda x: MLP(in_dim=x, hidden=[64], activation=nn.Sigmoid)  # type: ignore
@@ -204,7 +113,7 @@ gv_factory = lambda x: MLP(in_dim=x, hidden=[64], activation=nn.Sigmoid)  # type
 #  Define methods
 methods = [
     (
-        "BCF-new",
+        "BCF",
         BCF(
             n_exog=Z.shape[1],
             continuous_mask=np.repeat(True, X.shape[1]),
@@ -252,7 +161,21 @@ methods = [
             gv_factory=gv_factory,
             epochs_step_1=1000,
             lr_step_1=1e-3,
-            weight_decay_step_1=1e-3,
+            weight_decay_step_1=0e-3,
+            predict_imp=False,
+        ),
+    ),
+    (
+        "CF-MLP-2",
+        BCFMLP(
+            n_exog=Z.shape[1],
+            continuous_mask=np.repeat(True, X.shape[1]),
+            fx_factory=fx_factory,
+            fx_imp_factory=fx_imp_factory,
+            gv_factory=gv_factory,
+            epochs_step_1=1000,
+            lr_step_1=1e-3,
+            weight_decay_step_1=2.5e-1,
             predict_imp=False,
         ),
     ),
@@ -269,35 +192,35 @@ methods = [
 ]
 
 
+# %%  generate datasets
+X_train, y_train, Z_train, _, _, _ = generate_data_radial_f(
+    n_train, 0.5, f, noise_sd=0.1, seed=rng
+)
+Z_train = Z_train[:, np.newaxis]
+
 # %%
-# Fit - predict methods
+test_datasets = [
+    generate_data_radial_f(n_train, int_par, f, noise_sd=0.1, seed=rng)
+    for int_par in intvec
+]
+
+mses = pd.DataFrame(columns=["model", "test-mse", "int_par"])
 col_names = ["X{j}".format(j=j + 1) for j in range(p)] + ["y", "y_hat"]
 dat_methods = pd.DataFrame(columns=col_names + ["model", "env", "int_par"])
 
-
-# %%  generate datasets
-X_train, y_train, Z_train = generate_data_nonlinear(n_train, 0.5, f)
-Z_train = Z_train[:, np.newaxis]
-
-test_datasets = [generate_data_nonlinear(n_train, int_par, f) for int_par in intvec]
-
-# %% fit methods
-mses = pd.DataFrame(columns=["model", "test-mse", "int_par"])
-for method_name, method in methods:
+# %% fit/predict/evaluate methods
+for method_name, method in methods[4:6]:
     # fit methods
     print(method_name)
-    if method_name in [
-        "BCF-new",
-        "BCF-MLP",
-        "CF-MLP",
-    ]:
-        method.fit(np.hstack([X_train, Z_train]), y_train)
+    if method_name in ["BCF", "BCF-MLP", "CF-MLP", "CF-MLP-2"]:
+        method.fit(np.hstack([X_train, Z_train]), y_train, seed=seed_torch)
     else:
-        method.fit(X_train, y_train)
+        method.fit(X_train, y_train, seed=seed_torch)
 
-    # ---- predict on training data and save
+    # ---- predict on training data
     y_hat = method.predict(X_train)
 
+    # save training data and predictions
     inner_dat = create_dataframe(
         X=X_train,
         y=y_train,
@@ -312,7 +235,7 @@ for method_name, method in methods:
 
     # generate test data
     for i, int_par in enumerate(intvec):
-        X, y, Z = test_datasets[i]
+        X, y, Z, _, _, _ = test_datasets[i]
 
         # ---- predict on test data and save
         y_hat = method.predict(X)
@@ -353,23 +276,24 @@ for method_name, method in methods:
 # %%
 # Plot data
 plot_var = 1
-j = 2.5
+js = [0.5, 1.5, 3.5]
 
 dat2plot = dat_methods[dat_methods["env"] == "test"]
 # %%
 plt.figure()
 
 sns.scatterplot(
-    data=dat2plot[(dat2plot["model"] == "BCF-new") & (dat2plot["int_par"] == j)],
+    data=dat2plot[(dat2plot["model"] == "CF-MLP") & (dat2plot["int_par"].isin(js))],
     x=f"X{plot_var}",
     # hue="int_par",
     y="y",
     alpha=0.5,
+    hue="int_par",
     color="black",
 )
 
-filter_series = dat2plot["model"].isin(["IMP", "CF-MLP", "BCF-MLP"]) & (
-    dat2plot["int_par"] == j
+filter_series = dat2plot["model"].isin(["CF-MLP", "CF-MLP-2"]) & (
+    dat2plot["int_par"].isin(js)
 )
 sns.scatterplot(
     data=dat2plot[filter_series],
@@ -390,4 +314,6 @@ sns.lineplot(
     hue="model",
     estimator=None,
 )
+# %%
+# %%
 # %%

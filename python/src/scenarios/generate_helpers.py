@@ -120,3 +120,28 @@ def distance_left_nullspace(M: np.ndarray, M_hat: np.ndarray) -> float:
 
     # Compute distance between null spaces
     return np.linalg.norm(R @ R.T - R_hat @ R_hat.T)  # type: ignore
+
+
+def radial2D(
+    num_basis: int,
+    x_min=[-5, -5],
+    x_max=[5, 5],
+    seed: Optional[Union[int, SeedSequence, BitGenerator, Generator]] = None,
+):
+    # The function below was taken from https://github.com/sorawitj/HSIC-X/blob/master/experiments/distribution_generalization_nonlinear.py#L142
+    # We modified the arguments
+    def radial2D_helper(X, centres, num_basis):
+        Phi = np.zeros((X.shape[0], num_basis))
+        for i in range(num_basis):
+            Phi[:, i : i + 1] = np.exp(
+                -1 * (np.linalg.norm(X - centres[i], axis=1, keepdims=True) / 3) ** 2
+            )
+
+        return Phi
+
+    rng = np.random.default_rng(seed)
+    centres = rng.uniform(low=x_min, high=x_max, size=(num_basis, 2))
+    w = rng.normal(0, 4, size=num_basis)
+    f = lambda x: radial2D_helper(x, centres, num_basis) @ w
+
+    return f
