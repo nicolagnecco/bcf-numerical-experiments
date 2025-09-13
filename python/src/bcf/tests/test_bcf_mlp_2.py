@@ -11,108 +11,18 @@ import torch.nn as nn
 from mpl_toolkits.mplot3d import Axes3D  # registers the 3D projection
 from numpy.random import BitGenerator, Generator, SeedSequence
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
+from src.algorithms.oracle_methods import IMPFunctionNonLin
 from src.bcf.boosted_control_function_2 import BCF, OLS
 from src.bcf.boosted_control_function_mlp import BCFMLP, OLSMLP
 from src.bcf.mlp import MLP
-from src.scenarios.generate_data import generate_data, generate_data_Z_Gaussian
-from src.scenarios.generate_helpers import decompose_mat
+from src.scenarios.generate_data import generate_data_nonlinear
+from src.scenarios.generate_helpers import radial2D
 
 # Graphical settings
 sns.set_theme(style="darkgrid")
 
 
-# %% ---- Class definitions
-@dataclass
-class IMPFunctionNonLin:
-    """Oracle for IMP function"""
-
-    causal_function: Callable[[np.ndarray], np.ndarray]
-    instrument_matrix: np.ndarray = np.array([])
-    confounder_cov: np.ndarray = np.array([])
-    confounder_effect: np.ndarray = np.array([])
-    name: str = "imp_function"
-    is_fitted_: bool = False
-
-    def fit(self, X, y):
-        # perform checks
-        X, y = check_X_y(X, y)
-        n, p = X.shape
-
-        M = self.instrument_matrix
-        S = self.confounder_cov
-        gamma = self.confounder_effect
-
-        # compute imp
-        if M.shape[1] > 0 and M.shape[1] <= p:
-            Q, R = decompose_mat(M)
-            self.delta_ = R @ np.linalg.inv(R.T @ S @ R) @ R.T @ S @ gamma
-            # print(f"Delta IMP: {self.delta_}")
-        else:
-            self.delta_ = np.zeros(shape=(p,))
-
-        self.is_fitted_ = True
-
-    def predict(self, X):
-        # perform checks
-        X = check_array(X, accept_sparse=True)
-        check_is_fitted(self, "is_fitted_")  # type: ignore
-
-        # predict data
-        return self.causal_function(X) + (X @ self.delta_).ravel()
-
-
 # %% ---- Function definitions
-# Copyright: https://github.com/sorawitj/HSIC-X/blob/master/experiments/distribution_generalization_nonlinear.py#L32
-# Modified function name and X1 definition
-def generate_data_nonlinear(
-    n,
-    int_par,
-    f,
-    seed: Optional[Union[int, SeedSequence, BitGenerator, Generator]] = None,
-):
-    rng = np.random.default_rng(seed)
-    indicator = rng.binomial(1, int_par / 4, size=n)
-    Z1 = rng.uniform(0, int_par, size=n)
-    Z2 = rng.uniform(int_par, 4, size=n)
-    Z = Z1
-    Z[indicator == 1] = Z2[indicator == 1]
-    U1 = rng.normal(size=n)
-    U2 = rng.normal(size=n)
-
-    X1 = 1.0 * Z + 1.0 * U1 + 0.0 * rng.normal(size=n)
-    X2 = 1.0 * U2 + 0.0 * rng.normal(size=n)
-    X = np.vstack([X1, X2]).T
-    Y = f(X) + U1 + U2
-
-    return X, Y, Z
-
-
-def radial2D(
-    num_basis: int,
-    x_min=[-5, -5],
-    x_max=[5, 5],
-    seed: Optional[Union[int, SeedSequence, BitGenerator, Generator]] = None,
-):
-    # Copyright: https://github.com/sorawitj/HSIC-X/blob/master/experiments/distribution_generalization_nonlinear.py#L142
-    # We modified the arguments
-    def radial2D_helper(X, centres, num_basis):
-        Phi = np.zeros((X.shape[0], num_basis))
-        for i in range(num_basis):
-            Phi[:, i : i + 1] = np.exp(
-                -1 * (np.linalg.norm(X - centres[i], axis=1, keepdims=True) / 3) ** 2
-            )
-
-        return Phi
-
-    rng = np.random.default_rng(seed)
-    centres = rng.uniform(low=x_min, high=x_max, size=(num_basis, 2))
-    w = rng.normal(0, 4, size=num_basis)
-    f = lambda x: radial2D_helper(x, centres, num_basis) @ w
-
-    return f
-
-
 def eval_model(y_hat, y_test):
     mse = float(((y_hat - y_test) ** 2).mean())
     return mse

@@ -308,3 +308,29 @@ def generate_data_Z_Gaussian(
         S,
         gamma,
     )
+
+
+# The function below was adapted from: https://github.com/sorawitj/HSIC-X/blob/master/experiments/distribution_generalization_nonlinear.py#L32
+# Modified function name and X1 definition
+def generate_data_nonlinear(
+    n,
+    int_par,
+    f,
+    noise_sd: float = 0.1,
+    seed: Optional[Union[int, SeedSequence, BitGenerator, Generator]] = None,
+):
+    rng = np.random.default_rng(seed)
+    indicator = rng.binomial(1, int_par / 4, size=n)
+    Z1 = rng.uniform(0, int_par, size=n)
+    Z2 = rng.uniform(int_par, 4, size=n)
+    Z = Z1
+    Z[indicator == 1] = Z2[indicator == 1]
+    U1 = rng.normal(size=n)
+    U2 = rng.normal(size=n)
+
+    X1 = 1.0 * Z + 1.0 * U1 + noise_sd * rng.normal(size=n)
+    X2 = 1.0 * U2 + noise_sd * rng.normal(size=n)
+    X = np.vstack([X1, X2]).T
+    Y = f(X) + U1 + U2
+
+    return X, Y, Z
