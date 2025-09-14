@@ -54,6 +54,7 @@ def train_fx_gv(
     lr=1e-3,
     weight_decay=0e-4,
     device="cpu",
+    verbose=True,
 ):
     fx.to(device)
     gv.to(device)
@@ -61,11 +62,15 @@ def train_fx_gv(
 
     ds = TensorDataset(X, V, y)
     dl = DataLoader(ds, batch_size=batch_size, shuffle=True)
-    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+    # opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+    opt = make_opt_fx_gv(fx=fx, gv=gv, lr=lr, wd=weight_decay)
+
     loss_fn = nn.MSELoss()
 
     history = {"train_mse": []}
     model.train()
+    if verbose:
+        print("Train MSE Phase I -------------")
     for epoch in range(epochs):
         loss_sum, loss_fx, loss_gv, nobs = 0.0, 0.0, 0.0, 0
         for Xb, Vb, yb in dl:
@@ -78,15 +83,15 @@ def train_fx_gv(
 
             # ---- save loss for fx + gv
             nobs += Xb.size(0)
-            loss_sum += float(loss.item()) * nobs
+            loss_sum += float(loss.item()) * Xb.size(0)
 
             # ---- compute loss for fx
             loss = loss_fn(fx(Xb), yb)
-            loss_fx += float(loss.item()) * nobs
+            loss_fx += float(loss.item()) * Xb.size(0)
 
             # ---- compute loss for gv
             loss = loss_fn(gv(Vb), yb)
-            loss_gv += float(loss.item()) * nobs
+            loss_gv += float(loss.item()) * Xb.size(0)
 
         # compute average training loss across the epochs
         train_mse = loss_sum / max(nobs, 1)
@@ -94,9 +99,10 @@ def train_fx_gv(
         train_gv_mse = loss_gv / max(nobs, 1)
 
         history["train_mse"].append(train_mse)
-        if epoch % 50 == 0:
+
+        if verbose and (epoch % 50 == 0):
             print(
-                f"Phase I train mse - epoch {epoch}/{epochs} - fx+gv={train_mse:.6f} - fx= {train_fx_mse:.6f} - gv={train_gv_mse:.6f}"
+                f"Epoch {epoch}/{epochs} - fx+gv={train_mse:.6f} - fx= {train_fx_mse:.6f} - gv={train_gv_mse:.6f}"
             )
 
 
@@ -111,6 +117,7 @@ def train_fx_imp(
     lr=1e-3,
     weight_decay=0e-4,
     device="cpu",
+    verbose=True,
 ):
     fx.to(device)
     fx_imp.to(device)
@@ -124,10 +131,13 @@ def train_fx_imp(
 
     ds = TensorDataset(RX, y2)
     dl = DataLoader(ds, batch_size=batch_size, shuffle=True)
-    opt = torch.optim.AdamW(fx_imp.parameters(), lr=lr, weight_decay=weight_decay)
+    # opt = torch.optim.AdamW(fx_imp.parameters(), lr=lr, weight_decay=weight_decay)
+    opt = make_opt_fx(fx=fx_imp, lr=lr, wd=weight_decay)
     loss_fn = nn.MSELoss()
 
     fx_imp.train()
+    if verbose:
+        print("Train MSE Phase II -------------")
     for epoch in range(epochs):
         loss_sum, nobs = 0.0, 0
         for RXb, y2b in dl:
@@ -138,14 +148,12 @@ def train_fx_imp(
             loss.backward()
             opt.step()
             nobs += RXb.size(0)
-            loss_sum += float(loss.item()) * nobs
+            loss_sum += float(loss.item()) * RXb.size(0)
 
         # compute average training loss across the epochs
         train_mse = loss_sum / max(nobs, 1)
-        if epoch % 50 == 0:
-            print(
-                f"Phase II train mse - epoch {epoch}/{epochs} - fx_imp={train_mse:.6f}"
-            )
+        if verbose and (epoch % 50 == 0):
+            print(f"Epoch {epoch}/{epochs} - fx_imp={train_mse:.6f}")
 
 
 def train_fx(
@@ -157,16 +165,20 @@ def train_fx(
     lr=1e-3,
     weight_decay=0e-4,
     device="cpu",
+    verbose=True,
 ):
     fx.to(device)
 
     # precompute residual target y2 = y - f(X)
     ds = TensorDataset(X, y)
     dl = DataLoader(ds, batch_size=batch_size, shuffle=True)
-    opt = torch.optim.AdamW(fx.parameters(), lr=lr, weight_decay=weight_decay)
+    # opt = torch.optim.AdamW(fx.parameters(), lr=lr, weight_decay=weight_decay)
+    opt = make_opt_fx(fx=fx, lr=lr, wd=weight_decay)
     loss_fn = nn.MSELoss()
 
     fx.train()
+    if verbose:
+        print("Train MSE -------------")
     for epoch in range(epochs):
         loss_sum, nobs = 0.0, 0
         for Xb, yb in dl:
@@ -177,12 +189,12 @@ def train_fx(
             loss.backward()
             opt.step()
             nobs += Xb.size(0)
-            loss_sum += float(loss.item()) * nobs
+            loss_sum += float(loss.item()) * Xb.size(0)
 
         # compute average training loss across the epochs
         train_mse = loss_sum / max(nobs, 1)
-        if epoch % 50 == 0:
-            print(f"Train mse - epoch {epoch}/{epochs} - fx_imp={train_mse:.6f}")
+        if verbose and (epoch % 50 == 0):
+            print(f"Epoch {epoch}/{epochs} - fx={train_mse:.6f}")
 
 
 # ---- Prediction functions ------------------
@@ -211,3 +223,28 @@ def predict_fx_only(
     fx.to(device)
     out = y_mean + fx(X.to(device))
     return out.detach().squeeze(-1).cpu().numpy()
+
+
+# ---- helpers
+def param_groups_no_bias_decay(module, wd):
+    decay, no_decay = [], []
+    for n, p in module.named_parameters():
+        if not p.requires_grad:
+            continue
+        (no_decay if n.endswith("bias") else decay).append(p)
+    return [
+        dict(params=decay, weight_decay=wd),
+        dict(params=no_decay, weight_decay=0.0),
+    ]
+
+
+# Joint optimizer for f(X) and g(V)
+def make_opt_fx_gv(fx, gv, lr=1e-3, wd=1.0):
+    groups = param_groups_no_bias_decay(fx, wd) + param_groups_no_bias_decay(gv, wd)
+    return torch.optim.AdamW(groups, lr=lr, betas=(0.9, 0.999), eps=1e-8)
+
+
+# Optimizer for f(X) and f_imp(X)
+def make_opt_fx(fx, lr=1e-3, wd=1.0):
+    groups = param_groups_no_bias_decay(fx, wd)
+    return torch.optim.AdamW(groups, lr=lr, betas=(0.9, 0.999), eps=1e-8)

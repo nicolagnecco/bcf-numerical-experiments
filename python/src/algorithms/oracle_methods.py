@@ -48,7 +48,7 @@ class IMPFunction:
     name: str = "imp_function"
     is_fitted_: bool = False
 
-    def fit(self, X, y, Z):
+    def fit(self, X, y, Z, seed=None):
         # perform checks
         X, y = check_X_y(X, y)
         Z, y = check_X_y(Z, y)
@@ -87,10 +87,11 @@ class IMPFunctionNonLin:
     confounder_effect: np.ndarray = np.array([])
     mode: Literal["exact", "computed"] = "exact"
     boosted_estimator: Union[RandomForestRegressor, XGBRegressor] = XGBRegressor()
+    use_imp: bool = True
     name: str = "imp_function"
     is_fitted_: bool = False
 
-    def fit(self, X, y):
+    def fit(self, X, y, seed=None):
         # perform checks
         X, y = check_X_y(X, y)
         n, p = X.shape
@@ -102,11 +103,13 @@ class IMPFunctionNonLin:
         # compute imp
         if M.shape[1] > 0 and M.shape[1] <= p:
             Q, R = decompose_mat(M)
-            self.use_imp_ = True
+            self._use_imp_ = True
         else:
-            self.use_imp_ = False
+            self._use_imp_ = False
 
-        if self.use_imp_:
+        self._use_imp_ = self._use_imp_ and self.use_imp
+
+        if self._use_imp_:
             if self.mode == "exact":
                 self.delta_ = R @ np.linalg.inv(R.T @ S @ R) @ R.T @ S @ gamma
                 # print(f"Delta IMP: {self.delta_}")
@@ -124,7 +127,7 @@ class IMPFunctionNonLin:
         check_is_fitted(self, "is_fitted_")  # type: ignore
 
         # predict data
-        if self.use_imp_:
+        if self._use_imp_:
             return self.causal_function(X) + (X @ self.delta_).ravel()
         else:
             return self.causal_function(X)
@@ -137,7 +140,7 @@ class ConstantFunc:
     name: str = "constant_func"
     is_fitted_: bool = False
 
-    def fit(self, X, y, Z):
+    def fit(self, X, y, Z, seed=None):
         # perform checks
         X, y = check_X_y(X, y)
         Z, y = check_X_y(Z, y)
@@ -155,5 +158,4 @@ class ConstantFunc:
         # predict data
         n, p = X.shape
 
-        return np.repeat(self.c, n)
         return np.repeat(self.c, n)
