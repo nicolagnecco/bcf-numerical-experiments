@@ -201,10 +201,10 @@ def main(cfg: DictConfig) -> None:
             BCF(
                 n_exog=Z.shape[1],
                 continuous_mask=np.repeat(True, X.shape[1]),
-                passes=20,
-                fx=XGBRegressor(learning_rate=0.015),
-                gv=XGBRegressor(learning_rate=0.015),
-                fx_imp=XGBRegressor(learning_rate=0.05),
+                passes=5,
+                fx=XGBRegressor(learning_rate=0.025, base_score=0.0),
+                gv=XGBRegressor(learning_rate=0.025, base_score=0.0),
+                fx_imp=XGBRegressor(learning_rate=0.05, base_score=0.0),
             ),
         ),
         (
