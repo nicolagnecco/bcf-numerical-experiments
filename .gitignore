@@ -15,6 +15,7 @@ calc.bak*
 
 # ignore simulate runs
 calc.simulate
+python/outputs/
 
 # ignore the whole calc/ dir, track only scripts
 ##calc/
