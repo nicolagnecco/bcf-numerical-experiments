@@ -57,11 +57,11 @@ class BCFMLP(BaseEstimator):
         rrr, self.M_0_, self.q_opt_, self.R_, V = learn_rrr_and_structures(
             X_cont, Z, self.alphas
         )
-        self.n_R_cols_ = 0 if self.R_.size == 0 else self.R_.shape[1]
+        self.n_R_cols_ = self.R_.shape[1]
         self.n_V_cols_ = V.shape[1]
 
-        # 3) Decide whether IMP step is usable
-        self._use_imp_ = bool(self.predict_imp and self.n_R_cols_ > 0)
+        # 3) Use IMP if R has at least one non-zero entry
+        self._use_imp_ = bool(self.predict_imp and np.any(self.R_))
 
         # 4) Scale features/targets (storing means and std)
         self.X_mean_cont_ = np.mean(X_cont, axis=0)
@@ -130,7 +130,7 @@ class BCFMLP(BaseEstimator):
             )
 
         # Split continuous and categorical features from X
-        X_cont, X_cat = split_cont_cat(self.continuous_mask, X)
+        X_cont, X_cat = split_cont_cat(self.continuous_mask, X_pred)
 
         # standardize Xs
         X_cont_scaled = scale_matrix(X_cont, self.X_mean_cont_, self.X_std_cont_)

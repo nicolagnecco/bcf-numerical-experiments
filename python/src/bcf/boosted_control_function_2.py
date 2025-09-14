@@ -97,6 +97,7 @@ class BCF(BaseEstimator):
     fx_imp: ModelRegressor = RandomForestRegressor()
     gv: ModelRegressor = LinearRegression(fit_intercept=False)
     alphas = 10 ** np.arange(-5.0, 6.0)
+    predict_imp: bool = True
 
     def __post_init__(self):
         """Initialization steps post object instantiation."""
@@ -161,28 +162,32 @@ class BCF(BaseEstimator):
         # learn R (matrix spanning null space of M_0.T)
         self.R_ = learn_ker_M_0_T(self.M_0_)
 
+        # Use IMP if R has at least one non-zero entry
+        self._use_imp_ = bool(self.predict_imp and np.any(self.R_))
+
         # Step 0
-        f_X = np.mean(y)
+        self.y_mean_ = np.mean(y)
+        y_centered = y - self.y_mean_
+        f_X = 0
 
         # Step 1
         for k in tqdm(range(self.passes)):
             # Fit linear model using V
-            y_ = y - f_X
+            y_ = y_centered - f_X
             self.gv_.fit(V, y_)
             gamma_V = self.gv_.predict(V)
 
             # Fit flexible model using X
-            y_ = y - gamma_V  # type: ignore
+            y_ = y_centered - gamma_V  # type: ignore
             self.fx_.fit(X_original, y_)
             f_X = self.fx_.predict(X_original)
 
         # Step 2
-        y_ = y - f_X
-        self.gv_.fit(V, y_)
-        gamma_V = self.gv_.predict(V)
+        y_ = y_centered - f_X
 
-        # fit imp
-        self.fx_imp_.fit((X_continuous - self.X_mean_) @ self.R_, y_)
+        if self._use_imp_:
+            # fit imp
+            self.fx_imp_.fit((X_continuous - self.X_mean_) @ self.R_, y_)
 
         self.is_fitted_ = True
 
@@ -221,10 +226,16 @@ class BCF(BaseEstimator):
         # Extract continuous features from X
         X_continuous = X_pred[:, self.continuous_mask]
 
+        if self._use_imp_:
+            y_pred = (
+                self.y_mean_
+                + self.fx_.predict(X_pred)
+                + self.fx_imp_.predict((X_continuous - self.X_mean_) @ self.R_)
+            )
+        else:
+            y_pred = self.y_mean_ + self.fx_.predict(X_pred)
         # predict data
-        return self.fx_.predict(X_pred) + self.fx_imp_.predict(
-            (X_continuous - self.X_mean_) @ self.R_
-        )
+        return y_pred
 
 
 @dataclass
