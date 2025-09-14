@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 
 
 def split_features(df: pd.DataFrame):
@@ -94,3 +95,43 @@ def get_current_timestamp() -> str:
 
     # Format the date and time as a string (e.g., 20230703-153045)
     return now.strftime("%Y%m%d-%H%M%S")
+
+
+def plot_data(X, y, f):
+    # Define grid
+    x1 = np.linspace(-10, 10, 100)
+    x2 = np.linspace(-10, 10, 100)
+    X1, X2 = np.meshgrid(x1, x2)
+    X_grid = np.column_stack([X1.ravel(), X2.ravel()])
+
+    # Evaluate f on the grid
+    Z_surf = f(X_grid).reshape(X1.shape)
+
+    # --- build interactive figure
+    fig = go.Figure()
+
+    # surface for f(x)
+    fig.add_trace(
+        go.Surface(x=X1, y=X2, z=Z_surf, opacity=0.7, showscale=True, name="f(x)")
+    )
+
+    # scatter points for generated data
+    fig.add_trace(
+        go.Scatter3d(
+            x=X[:, 0],
+            y=X[:, 1],
+            z=y,
+            mode="markers",
+            marker=dict(size=3, color="red", opacity=0.15),
+            name="samples",
+        )
+    )
+
+    fig.update_layout(
+        scene=dict(xaxis_title="x1", yaxis_title="x2", zaxis_title="y"),
+        title="Interactive 3D view of f(x) and generated data",
+    )
+
+    fig.show()
+
+    fig.show()

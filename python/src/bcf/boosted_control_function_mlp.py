@@ -1,3 +1,4 @@
+import random
 from dataclasses import dataclass
 from typing import Any, Callable, Optional, Tuple, Union
 
@@ -70,8 +71,16 @@ class BCFMLP(BaseEstimator):
         X_cont_rot = rotate(X_cont_scaled, self.R_)  # input to fx_imp
         self.y_mean_ = float(y.mean())
         y_centered = center_y(y, self.y_mean_)
+        self.y_std_ = float(np.std(y_centered)) or 1.0
+        y_scaled = y_centered / self.y_std_
 
         # 5) Learn BCF
+        # 5.0) Set seeds
+        if seed is not None:
+            torch.manual_seed(seed)
+            np.random.seed(seed)
+            random.seed(seed)
+
         # 5.1) instanstiate estimators
         self.fx_ = self.fx_factory(self.n_X_cols_)
         self.fx_imp_ = self.fx_imp_factory(self.n_R_cols_)
@@ -83,7 +92,7 @@ class BCFMLP(BaseEstimator):
             gv=self.gv_,
             X=torch.from_numpy(X_scaled).float(),
             V=torch.from_numpy(V).float(),
-            y=torch.from_numpy(y_centered).float(),
+            y=torch.from_numpy(y_scaled).float(),
             weight_decay=self.weight_decay_step_1,
             lr=self.lr_step_1,
             epochs=self.epochs_step_1,
@@ -96,7 +105,7 @@ class BCFMLP(BaseEstimator):
                 fx_imp=self.fx_imp_,
                 X=torch.from_numpy(X_scaled).float(),
                 RX=torch.from_numpy(X_cont_rot).float(),
-                y=torch.from_numpy(y_centered).float(),
+                y=torch.from_numpy(y_scaled).float(),
                 weight_decay=self.weight_decay_step_2,
                 lr=self.lr_step_2,
                 epochs=self.epochs_step_2,
@@ -129,17 +138,20 @@ class BCFMLP(BaseEstimator):
         X_cont_rot = rotate(X_cont_scaled, self.R_)  # input to self.fx_imp_
 
         if self._use_imp_:
-            y_pred = predict_full(
+            y_hat_scaled = predict_full(
                 fx=self.fx_,
                 fx_imp=self.fx_imp_,
                 X=torch.from_numpy(X_scaled).float(),
                 RX=torch.from_numpy(X_cont_rot).float(),
-                y_mean=self.y_mean_,
+                y_mean=0.0,
             )
+            y_pred = self.y_mean_ + self.y_std_ * y_hat_scaled
         else:
-            y_pred = predict_fx_only(
-                fx=self.fx_, X=torch.from_numpy(X_scaled).float(), y_mean=self.y_mean_
+            y_hat_scaled = predict_fx_only(
+                fx=self.fx_, X=torch.from_numpy(X_scaled).float(), y_mean=0.0
             )
+
+            y_pred = self.y_mean_ + self.y_std_ * y_hat_scaled
 
         # predict data
         return y_pred
@@ -180,6 +192,14 @@ class OLSMLP(BaseEstimator):
         X_scaled = np.concatenate([X_cont_scaled, X_cat], axis=1)
         self.y_mean_ = float(y.mean())
         y_centered = center_y(y, self.y_mean_)
+        self.y_std_ = float(np.std(y_centered)) or 1.0
+        y_scaled = y_centered / self.y_std_
+
+        # set seeds
+        if seed is not None:
+            torch.manual_seed(seed)
+            np.random.seed(seed)
+            random.seed(seed)
 
         # instantiate neural net
         self.fx_ = self.fx_factory(self.n_X_cols_)
@@ -188,7 +208,7 @@ class OLSMLP(BaseEstimator):
         train_fx(
             fx=self.fx_,
             X=torch.from_numpy(X_scaled).float(),
-            y=torch.from_numpy(y_centered).float(),
+            y=torch.from_numpy(y_scaled).float(),
             weight_decay=self.weight_decay,
             lr=self.lr,
             epochs=self.epochs,
@@ -209,11 +229,13 @@ class OLSMLP(BaseEstimator):
         X_cont_scaled = scale_matrix(X_cont, self.X_mean_cont_, self.X_std_cont_)
         X_scaled = np.concatenate([X_cont_scaled, X_cat], axis=1)  # input to self.fx_
 
-        y_pred = predict_fx_only(
+        y_hat_scaled = predict_fx_only(
             fx=self.fx_,
             X=torch.from_numpy(X_scaled).float(),
-            y_mean=self.y_mean_,
+            y_mean=0.0,
         )
+
+        y_pred = self.y_mean_ + self.y_std_ * y_hat_scaled
 
         # predict data
         return y_pred

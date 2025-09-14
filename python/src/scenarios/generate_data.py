@@ -312,10 +312,11 @@ def generate_data_Z_Gaussian(
 
 # The function below was adapted from: https://github.com/sorawitj/HSIC-X/blob/master/experiments/distribution_generalization_nonlinear.py#L32
 # Modified function name and X1 definition
-def generate_data_nonlinear(
+def generate_data_radial_f(
     n,
     int_par,
     f,
+    instrument_strength: float = 0.1,
     noise_sd: float = 0.1,
     seed: Optional[Union[int, SeedSequence, BitGenerator, Generator]] = None,
 ):
@@ -328,9 +329,14 @@ def generate_data_nonlinear(
     U1 = rng.normal(size=n)
     U2 = rng.normal(size=n)
 
-    X1 = 1.0 * Z + 1.0 * U1 + noise_sd * rng.normal(size=n)
+    X1 = instrument_strength * Z + 1.0 * U1 + noise_sd * rng.normal(size=n)
     X2 = 1.0 * U2 + noise_sd * rng.normal(size=n)
     X = np.vstack([X1, X2]).T
     Y = f(X) + U1 + U2
 
-    return X, Y, Z
+    # compute oracle quantities
+    S = np.eye(2) * (1.0 + noise_sd**2)
+    M = np.array([[instrument_strength], [0.0]])
+    gamma = np.array([[1, 1]]).T
+
+    return X, Y, Z, S, M, gamma
