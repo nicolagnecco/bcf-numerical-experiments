@@ -1,0 +1,46 @@
+data_path: "../data/processed/"
+save_predictions: false
+no_lat_lon: true  # Set to True to use only X, an False to use [X, Z]
+use_whole_data: false  # Set to True if don't split train/test
+split_criterions: 
+  - "North/South"
+  - "South/North"
+  - "East/West"
+  - "West/East"
+  - "SE/rest"
+  - "rest/SE"
+  - "SW/rest"
+  - "rest/SW"
+  - "NE/rest"
+  - "rest/NE"
+  - "NW/rest"
+  - "rest/NW"
+
+# Number of repetitions
+B: 1 
+# Validation as percentage training samples
+val_percentage: 0.2
+
+models_selected: 
+ - "BCF"
+ - "LS"
+#  - "CF-small"
+#  - "CF-medium"
+#  - "CF-large"
+#  - "BCF-MLP"
+#  - "CF-MLP"
+#  - "AVE"
+#  - "OLS-MLP"
+
+num_workers: 1
+debug: false
+
+run_name: housing-data-experiment
+
+hydra:
+  run:
+    # Output directory:
+    dir: ../results/output_data/housing-data/${now:%Y%m%d_%H%M%S}
+  job:
+    # Change into the run directory before executing your script
+    chdir: true
