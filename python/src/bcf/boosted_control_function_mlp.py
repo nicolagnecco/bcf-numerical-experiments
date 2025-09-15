@@ -130,7 +130,7 @@ class BCFMLP(BaseEstimator):
             )
 
         # Split continuous and categorical features from X
-        X_cont, X_cat = split_cont_cat(self.continuous_mask, X)
+        X_cont, X_cat = split_cont_cat(self.continuous_mask, X_pred)
 
         # standardize Xs
         X_cont_scaled = scale_matrix(X_cont, self.X_mean_cont_, self.X_std_cont_)
