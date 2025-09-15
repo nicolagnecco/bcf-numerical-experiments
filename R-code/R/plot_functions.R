@@ -15,6 +15,8 @@ my_palette <- list(
   "darkgrey" = "darkgrey"
 )
 
+
+
 METHODS <- c("BCF","IMP", "OLS", 
              "ControlTwicing","ControlTwicing_no_imp",  
              "OLS-old", "OLSTwicing", "ConstFunc",
@@ -28,14 +30,13 @@ METHODS_LBL <- c("BCF", "IMP", "LS", "ControlTwicing","ControlTwicing_no_imp",
 methods_tbl <- list(
   c("method" = "BCF", "color" = my_palette$c3, "shape" = 21, "size" = 1, "linetype" = "solid"),
   c("method" = "LS", "color" = my_palette$c1, "shape" = 21, "size" = 1, "linetype" = "solid"),
+  c("method" = "Constant", "color" = my_palette$darkgrey, "shape" = 19, "size" = 0.5, "linetype" = "dotted"),
+  c("method" = "IMP", "color" = my_palette$c2, "shape" = 21, "size" = 1, "linetype" = "solid"),
+  c("method" = "Structural", "color" = my_palette$darkgrey, "shape" = 17, "size" = 0.5, "linetype" = "dotted"),
   c("method" = "ControlTwicing", "color" = my_palette$light_blue, "shape" = 21, "size" = 1, "linetype" = "solid"),
   c("method" = "ControlTwicing_no_imp", "color" = my_palette$c2, "shape" = 21, "size" = 1, "linetype" = "solid"),
   c("method" =  "Tree + Linear", "color" = my_palette$blue2, "shape" = 21, "size" = 1, "linetype" = "solid"),
-  c("method" = "Tree", "color" = my_palette$red, "shape" = 21, "size" = 1, "linetype" = "solid"),
-  c("method" = "Constant", "color" = my_palette$darkgrey, "shape" = 19, "size" = 0.5, "linetype" = "dotted"),
-  c("method" = "IMP", "color" = my_palette$c2, "shape" = 21, "size" = 1, "linetype" = "solid"),
-  c("method" = "Structural", "color" = my_palette$darkgrey, "shape" = 17, "size" = 0.5, "linetype" = "dotted")
-) %>% 
+  c("method" = "Tree", "color" = my_palette$red, "shape" = 21, "size" = 1, "linetype" = "solid")) %>% 
   purrr::transpose() %>% 
   as_tibble() %>% 
   unnest(cols = c(method, color, shape, linetype)) %>% 
@@ -157,16 +158,18 @@ refactor_param <- function(param){
   
 }
 
-refactor_methods <- function(methods, rev = FALSE){
+refactor_methods <- function(methods, 
+                             methods_lev=METHODS, 
+                             methods_lbl=METHODS_LBL,
+                             rev = FALSE){
   ## character_vector boolean -> factor
   ## refactor column with methods
-  
   unique_methods <- unique(methods)
   
   
   factor(methods,
-         levels = if(rev){rev(METHODS)}else{METHODS},
-         labels = if(rev){rev(METHODS_LBL)}else{METHODS_LBL})
+         levels = if(rev){rev(methods_lev)}else{methods_lev},
+         labels = if(rev){rev(methods_lbl)}else{methods_lbl})
 }
 
 refactor_methods_parse <- function(methods){
