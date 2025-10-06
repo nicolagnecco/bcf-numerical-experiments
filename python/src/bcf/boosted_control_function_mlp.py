@@ -7,7 +7,7 @@ import torch
 from numpy.typing import NDArray
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
-from src.bcf.helpers import split_X_and_Z
+from src.bcf.helpers import split_cont_cat, split_X_and_Z
 from src.bcf.mlp import (
     MLP,
     predict_full,
@@ -253,16 +253,6 @@ def validate_and_split(X, y, n_exog, continuous_mask, check_input: bool):
     X_cont, X_cat = split_cont_cat(continuous_mask, X_original)
 
     return X_original, Z, y, X_cont, X_cat
-
-
-def split_cont_cat(continuous_mask, X) -> Tuple[np.ndarray, np.ndarray]:
-    m = np.asarray(continuous_mask, dtype=bool)
-    if m.ndim != 1 or m.size != X.shape[1]:
-        raise ValueError("continuous_mask must be 1D bool of length n_cols(X).")
-
-    X_cont = X[:, m]
-    X_cat = X[:, ~m]
-    return X_cont, X_cat
 
 
 def learn_rrr_and_structures(X_cont: np.ndarray, Z: np.ndarray, alphas: np.ndarray):
