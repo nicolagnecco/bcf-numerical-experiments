@@ -78,15 +78,6 @@ class BCF(BaseEstimator):
     predict(X):
         Predict using the fitted BCF model.
 
-    _split_X_and_Z(X, n_exog):
-        Helper method to split the concatenated [X, Z] matrix into X and Z.
-
-    _learn_M_0(X, Z, alphas):
-        Helper method to learn the matrix `M_0`.
-
-    _learn_ker_M_0_T(M_0):
-        Helper method to learn the null space of `M_0.T`.
-
 
     """
 
