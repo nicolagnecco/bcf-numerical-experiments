@@ -17,7 +17,7 @@ split_criterions:
   - "rest/NW"
 
 # Number of repetitions
-B: 10
+B: 1
 # Validation as percentage of in-distribution samples
 val_percentage: 0.2
 
@@ -45,7 +45,7 @@ models_selected:
 
 num_workers: 1
 debug: false
-max_train_size: null
+max_train_size: 1000
 random_state: 42 # unused now
 
 run_name: housing-data-experiment
