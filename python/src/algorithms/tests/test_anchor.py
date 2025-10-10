@@ -71,3 +71,9 @@ import matplotlib.pyplot as plt
 plt.scatter(y_hat_cv, y_hat, alpha=0.5)
 # plt.scatter(y_hat, y, color='red')
 # %%
+from anchorboosting import AnchorBooster
+
+anchor_booster = AnchorBooster(gamma=1.0)
+# %%
+anchor_booster.fit(X, y, Z_, categorical_feature=["holiday", "weekday"])
+# %%
