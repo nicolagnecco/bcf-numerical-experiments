@@ -16,7 +16,7 @@ click==8.0.1
 cvxopt==1.2.7
 cycler==0.10.0
 Cython==0.29.24
-debugpy==1.5.0
+debugpy
 decorator==5.1.0
 defusedxml==0.7.1
 dill==0.3.6
