@@ -46,6 +46,8 @@ class GroupDRO(BaseEstimator):
     def __post_init__(self):
         """Initialization steps post object instantiation."""
         self.name = "group_dro"
+        if self.device is None:
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def _split_train_val(self, X, y, g):
         N = X.shape[0]
@@ -78,10 +80,20 @@ class GroupDRO(BaseEstimator):
         # set up loaders
         (X_tr, y_tr, g_tr), (X_val, y_val, g_val) = self._split_train_val(X, y, g)
         train_loader, _ = make_loader_from_numpy(
-            X_tr, y_tr, g_tr, batch_size=self.batch_size, shuffle=True
+            X_tr,
+            y_tr,
+            g_tr,
+            batch_size=self.batch_size,
+            shuffle=True,
+            device=self.device,
         )
         val_loader, _ = make_loader_from_numpy(
-            X_val, y_val, g_val, batch_size=self.batch_size, shuffle=False
+            X_val,
+            y_val,
+            g_val,
+            batch_size=self.batch_size,
+            shuffle=False,
+            device=self.device,
         )
 
         # train model
@@ -94,6 +106,7 @@ class GroupDRO(BaseEstimator):
             lr=self.lr,
             step_size=self.step_size,
             wd=self.weight_decay,
+            device=self.device,
         )
 
         self.is_fitted_ = True
@@ -119,7 +132,9 @@ class GroupDRO(BaseEstimator):
         check_is_fitted(self, "is_fitted_")
 
         self.fx_.eval()
-        X_t = torch.as_tensor(X, dtype=torch.float32, device=self.device)
+
+        model_device = next(self.fx_.parameters()).device
+        X_t = torch.as_tensor(X, dtype=torch.float32, device=model_device)
         with torch.no_grad():
             yhat = self.fx_(X_t)
             if yhat.dim() == 2 and yhat.size(-1) == 1:
