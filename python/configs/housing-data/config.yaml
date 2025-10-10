@@ -1,7 +1,7 @@
-data_path: "../data/processed/"
+data_path: "../data/processed/housing-temp.csv"
 save_predictions: false
-no_lat_lon: true  # Set to True to use only X, an False to use [X, Z]
-use_whole_data: false  # Set to True if don't split train/test
+no_lat_lon: true  # Set to True to use only X, and False to use [X, Z] as predictor for non-robust methods
+
 split_criterions: 
   - "North/South"
   - "South/North"
@@ -17,25 +17,48 @@ split_criterions:
   - "rest/NW"
 
 # Number of repetitions
-B: 1 
-# Validation as percentage training samples
+B: 10
+# Validation as percentage of in-distribution samples
 val_percentage: 0.2
 
 models_selected: 
  - "BCF"
+ - "CF-small"
+ - "CF-medium"
+ - "CF-large"
  - "LS"
-#  - "CF-small"
-#  - "CF-medium"
-#  - "CF-large"
+#  - "Anchor-check"
+#  - "Anchor-small"
+#  - "Anchor-medium"
+#  - "Anchor-large"
+#  - "OLS"
+#  - "AnchorBooster-check"
+ - "AnchorBooster-small"
+ - "AnchorBooster-medium"
+ - "AnchorBooster-large"
+ - "GroupDRO"
 #  - "BCF-MLP"
 #  - "CF-MLP"
-#  - "AVE"
 #  - "OLS-MLP"
+ - "AVE"
+
 
 num_workers: 1
 debug: false
+max_train_size: null
+random_state: 42 # unused now
 
 run_name: housing-data-experiment
+
+# algorithms
+algos:
+  BCFMLP:
+    lr_f: 1e-3
+    lr_g: 1e-3
+    lr_fimp: 1e-4
+    weight_decay_f: 1e-3
+    weight_decay_g: 1e-3
+    weight_decay_fimp: 0.0
 
 hydra:
   run:
