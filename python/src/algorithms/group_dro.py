@@ -67,15 +67,15 @@ class GroupDRO(BaseEstimator):
         check_input=True,
     ) -> None:
 
-        # create MLP
-        self.n_X_cols_ = X.shape[1]
-        self.fx_ = self.fx_factory(self.n_X_cols_)
-
         # set seed
         if seed is not None:
             torch.manual_seed(seed)
             np.random.seed(seed)
             random.seed(seed)
+
+        # create MLP
+        self.n_X_cols_ = X.shape[1]
+        self.fx_ = self.fx_factory(self.n_X_cols_)
 
         # set up loaders
         (X_tr, y_tr, g_tr), (X_val, y_val, g_val) = self._split_train_val(X, y, g)

@@ -46,7 +46,6 @@ models_selected:
 num_workers: 1
 debug: false
 max_train_size: null
-random_state: 42 # unused now
 
 run_name: housing-data-experiment
 

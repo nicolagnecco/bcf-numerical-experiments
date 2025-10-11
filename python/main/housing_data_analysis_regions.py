@@ -15,6 +15,7 @@ import torch
 import torch.nn as nn
 from anchorboosting import AnchorBooster
 from hydra.utils import get_original_cwd, instantiate
+from numpy.random import SeedSequence
 from numpy.typing import NDArray
 from omegaconf import DictConfig, OmegaConf
 from sklearn.base import BaseEstimator
@@ -332,6 +333,7 @@ def fit_model(
     y_train: pd.Series,
     Z_train: pd.DataFrame,
     no_lat_lon: bool,
+    seed: Optional[int],
 ):
     """
     Fit a single model on the training data.
@@ -357,11 +359,13 @@ def fit_model(
     ):
         # BCF models require combined X and Z
         input_data = np.hstack([X_train, Z_train])
-        model_instance.fit(input_data, y_train.ravel())
+        model_instance.fit(input_data, y_train.ravel(), seed=seed)
         print(f"Model {model_name} fitted.")
     elif isinstance(model_instance, GroupDRO):
         g_train = create_groups(Z_train.to_numpy())
-        model_instance.fit(X_train.to_numpy(), y_train.to_numpy().ravel(), g_train)
+        model_instance.fit(
+            X_train.to_numpy(), y_train.to_numpy().ravel(), g_train, seed=seed
+        )
     elif isinstance(model_instance, AnchorBooster):
         model_instance.fit(X_train.to_numpy(), y_train.ravel(), Z_train.to_numpy())
     else:
@@ -485,6 +489,7 @@ def process_repetition(
     no_lat_lon: bool,
     save_predictions: bool,
     cfg: DictConfig,
+    seed: int,
 ) -> Tuple[List[dict], List[dict]]:
     """
     Process a single repetition for a given split criterion.
@@ -531,7 +536,7 @@ def process_repetition(
         y_id,
         Z_id,
         test_size=val_percentage,
-        random_state=42,  # Keep randomness of validation fixed since the only randomness comes from different training samples (see next step)
+        random_state=seed,  # if you further subsample later, you can also keep training and validation split deterministic here
         shuffle=True,
     )
 
@@ -539,9 +544,9 @@ def process_repetition(
     idx = X_train.index.to_series()
     if size_training_subsamples is not None:
         if (size_training_subsamples) < len(idx):
-            idx = idx.sample(n=size_training_subsamples, random_state=b).index
+            idx = idx.sample(n=size_training_subsamples, random_state=seed + 1).index
         else:
-            idx = idx.sample(frac=0.8, random_state=b).index
+            idx = idx.sample(frac=0.8, random_state=seed + 1).index
 
     X_train_1, y_train_1, Z_train_1 = (
         X_train.loc[idx],
@@ -559,10 +564,13 @@ def process_repetition(
     mse_validation = []
     mse_testing = []
 
-    for model in models:
+    child = SeedSequence(seed + 2)
+    per_model_seeds = [int(s.generate_state(1)[0]) for s in child.spawn(len(models))]
+
+    for model, seed_m in zip(models, per_model_seeds):
         model_name = model["name"]
         print(f"\nFitting Model: {model_name} (Repetition: {rep_id})")
-        fit_model(model, X_train_1, y_train_1, Z_train_1, no_lat_lon)
+        fit_model(model, X_train_1, y_train_1, Z_train_1, no_lat_lon, seed=seed_m)
 
         # Predict on Validation Data
         print(f"Predicting with Model: {model_name} on Validation Data")
@@ -633,6 +641,7 @@ def main(cfg: DictConfig):
     val_percentage = float(cfg.val_percentage)
     models_selected = list(cfg.models_selected)
     max_train_size = cfg.max_train_size
+    random_state = 42
 
     # Load data
     old_path = Path(get_original_cwd()) / cfg.data_path
@@ -640,6 +649,9 @@ def main(cfg: DictConfig):
 
     # Initialize lists to store evaluation results
     mse_validation_all, mse_testing_all = [], []
+
+    ss = SeedSequence(random_state)  # master seed
+    children_random_states = ss.spawn(len(cfg.split_criterions))  #
 
     # Iterate over each split criterion
     for split_idx, split_crit in enumerate(cfg.split_criterions):
@@ -651,8 +663,17 @@ def main(cfg: DictConfig):
         # Prepare a list of repetition indices
         repetition_indices = list(range(1, cfg.B + 1))
 
+        # %%
+        # %%
+        # Prepare a list of seeds
+        random_state_iter_b = children_random_states[split_idx].spawn(cfg.B)
+        seeds_iter_b = [int(c.generate_state(1)[0]) for c in random_state_iter_b]
+
         # Define the list of tasks for this split criterion
-        tasks = [(split_idx, split_crit, b) for b in repetition_indices]
+        tasks = [
+            (split_idx, split_crit, b, seed_b)
+            for b, seed_b in zip(repetition_indices, seeds_iter_b)
+        ]
 
         max_workers = (
             os.cpu_count() if cfg.num_workers is None else int(cfg.num_workers)
@@ -673,6 +694,7 @@ def main(cfg: DictConfig):
                 no_lat_lon=no_lat_lon,
                 save_predictions=save_predictions,
                 cfg=cfg,
+                seed=42,
             )
         # Execute the repetitions in parallel using ProcessPoolExecutor
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -693,8 +715,9 @@ def main(cfg: DictConfig):
                     no_lat_lon=no_lat_lon,
                     save_predictions=save_predictions,
                     cfg=cfg,
-                ): (split_idx, split_crit, b)
-                for (split_idx, split_crit, b) in tasks
+                    seed=seed_b,
+                ): (split_idx, split_crit, b, seed_b)
+                for (split_idx, split_crit, b, seed_b) in tasks
             }
 
             # As each task completes, collect the results
