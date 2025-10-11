@@ -45,7 +45,7 @@ models_selected:
 
 num_workers: 1
 debug: false
-max_train_size: null
+max_train_size: 200
 
 run_name: housing-data-experiment
 
