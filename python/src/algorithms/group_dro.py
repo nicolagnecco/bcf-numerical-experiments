@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import torch
 from numpy.typing import NDArray
+from pytorch_lightning import seed_everything
 from sklearn.base import BaseEstimator, RegressorMixin, clone
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.exceptions import NotFittedError
@@ -51,8 +52,7 @@ class GroupDRO(BaseEstimator):
     def _split_train_val(self, X, y, g):
         N = X.shape[0]
         idx = np.arange(N)
-        rng = np.random.default_rng()
-        rng.shuffle(idx)
+        np.random.shuffle(idx)
         n_val = int(self.val_fraction * N)
         val_idx, tr_idx = idx[:n_val], idx[n_val:]
         return (X[tr_idx], y[tr_idx], g[tr_idx]), (X[val_idx], y[val_idx], g[val_idx])
@@ -68,9 +68,9 @@ class GroupDRO(BaseEstimator):
 
         # set seed
         if seed is not None:
-            torch.manual_seed(seed)
-            np.random.seed(seed)
-            random.seed(seed)
+            seed_everything(
+                seed, workers=False
+            )  # NOTE: to ensure reproducibility when num_workers > 0 in DataLoaders, see https://docs.pytorch.org/docs/stable/notes/randomness.html#dataloader
 
         # create MLP
         self.n_X_cols_ = X.shape[1]

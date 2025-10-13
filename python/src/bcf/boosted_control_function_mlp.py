@@ -5,6 +5,7 @@ from typing import Any, Callable, Optional, Tuple, Union
 import numpy as np
 import torch
 from numpy.typing import NDArray
+from pytorch_lightning import seed_everything
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
 from src.bcf.helpers import split_cont_cat, split_X_and_Z
@@ -79,9 +80,9 @@ class BCFMLP(BaseEstimator):
         # 5) Learn BCF
         # 5.0) Set seeds
         if seed is not None:
-            torch.manual_seed(seed)
-            np.random.seed(seed)
-            random.seed(seed)
+            seed_everything(
+                seed, workers=False
+            )  # NOTE: to ensure reproducibility when num_workers > 0 in DataLoaders, see https://docs.pytorch.org/docs/stable/notes/randomness.html#dataloader
 
         # 5.1) instanstiate estimators
         self.fx_ = self.fx_factory(self.n_X_cols_)
@@ -201,9 +202,9 @@ class OLSMLP(BaseEstimator):
 
         # set seeds
         if seed is not None:
-            torch.manual_seed(seed)
-            np.random.seed(seed)
-            random.seed(seed)
+            seed_everything(
+                seed, workers=False
+            )  # NOTE: to ensure reproducibility when num_workers > 0 in DataLoaders, see https://docs.pytorch.org/docs/stable/notes/randomness.html#dataloader
 
         # instantiate neural net
         self.fx_ = self.fx_factory(self.n_X_cols_)
