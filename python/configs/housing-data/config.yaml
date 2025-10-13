@@ -17,7 +17,7 @@ split_criterions:
   - "rest/NW"
 
 # Number of repetitions
-B: 10
+B: 4
 # Validation as percentage of in-distribution samples
 val_percentage: 0.2
 
