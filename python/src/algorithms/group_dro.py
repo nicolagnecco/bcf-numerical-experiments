@@ -41,7 +41,6 @@ class GroupDRO(BaseEstimator):
     weight_decay: float = 0.0
     device: Optional[torch.device] = None
     verbose: bool = True
-    seed: Optional[int] = None
 
     def __post_init__(self):
         """Initialization steps post object instantiation."""
@@ -52,7 +51,7 @@ class GroupDRO(BaseEstimator):
     def _split_train_val(self, X, y, g):
         N = X.shape[0]
         idx = np.arange(N)
-        rng = np.random.default_rng(self.seed)
+        rng = np.random.default_rng()
         rng.shuffle(idx)
         n_val = int(self.val_fraction * N)
         val_idx, tr_idx = idx[:n_val], idx[n_val:]
