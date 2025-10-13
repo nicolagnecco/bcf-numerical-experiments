@@ -17,7 +17,7 @@ split_criterions:
   - "rest/NW"
 
 # Number of repetitions
-B: 4
+B: 10
 # Validation as percentage of in-distribution samples
 val_percentage: 0.2
 
@@ -45,19 +45,9 @@ models_selected:
 
 num_workers: 1
 debug: false
-max_train_size: 200
+max_train_size: null
 
 run_name: housing-data-experiment
-
-# algorithms
-algos:
-  BCFMLP:
-    lr_f: 1e-3
-    lr_g: 1e-3
-    lr_fimp: 1e-4
-    weight_decay_f: 1e-3
-    weight_decay_g: 1e-3
-    weight_decay_fimp: 0.0
 
 hydra:
   run:

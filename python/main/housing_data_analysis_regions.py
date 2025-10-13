@@ -44,7 +44,7 @@ ListOfModels = List[ModelItem]
 # %%
 
 
-def get_models(cfg: DictConfig) -> ListOfModels:
+def get_models() -> ListOfModels:
     """
     Returns a fresh list of model dictionaries with new instances.
     """
@@ -183,12 +183,12 @@ def get_models(cfg: DictConfig) -> ListOfModels:
                 gv_factory=make_mlp_sigmoid,
                 epochs_step_1=1000,
                 epochs_step_2=1500,
-                lr_f=cfg.algos.BCFMLP.lr_f,
-                lr_g=cfg.algos.BCFMLP.lr_g,
-                lr_fimp=cfg.algos.BCFMLP.lr_fimp,
-                weight_decay_f=cfg.algos.BCFMLP.weight_decay_f,
-                weight_decay_g=cfg.algos.BCFMLP.weight_decay_g,
-                weight_decay_fimp=cfg.algos.BCFMLP.weight_decay_fimp,
+                lr_f=1e-3,
+                lr_g=1e-3,
+                lr_fimp=1e-4,
+                weight_decay_f=1e-3,
+                weight_decay_g=1e-3,
+                weight_decay_fimp=0.0,
             ),
         },
         {
@@ -557,7 +557,7 @@ def process_repetition(
     print(f"Subsample {b}: Training_1 samples: {X_train_1.shape[0]}")
 
     # Initialize fresh models
-    models = filter_models(get_models(cfg), models_selected=models_selected)
+    models = filter_models(get_models(), models_selected=models_selected)
 
     mse_validation = []
     mse_testing = []
