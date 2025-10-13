@@ -426,7 +426,7 @@ def evaluate_model(
     no_lat_lon: bool,
 ) -> dict:
     """
-    Evaluate a single model and return its MSE and standard error.
+    Evaluate a single model and return its MSE.
 
     Parameters:
     ----------
@@ -464,13 +464,11 @@ def evaluate_model(
         y_pred = model_instance.predict(input_covariates)
 
     mse = ((y_pred - y) ** 2).mean()
-    se = ((y_pred - y) ** 2).std() / np.sqrt(len(y))
 
     return {
         "Rep": rep,
         "Method": model_name,
         "MSE": mse,
-        "MSE_standard_error": se,
     }
 
 
