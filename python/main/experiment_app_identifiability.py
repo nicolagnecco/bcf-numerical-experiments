@@ -7,14 +7,12 @@ import hydra
 import numpy as np
 import pandas as pd
 import torch.nn as nn
-from hydra.utils import get_original_cwd
 from numpy.random import SeedSequence
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 from sklearn.linear_model import LinearRegression
 from src.algorithms.oracle_methods import ConstantFunc, IMPFunctionNonLin
 from src.bcf.boosted_control_function_2 import BCF, OLS
-from src.bcf.boosted_control_function_mlp import BCFMLP, OLSMLP
-from src.bcf.mlp import MLP
+from src.bcf.boosted_control_function_mlp import BCFMLP
 from src.scenarios.generate_data import generate_data_radial_f
 from src.scenarios.generate_helpers import radial2D
 from src.simulations.simulations_funcs import compute_mse
@@ -270,7 +268,7 @@ def main(cfg: DictConfig) -> None:
     # Seeds for each algorithms using torch, if applicable
     seeds_torch = [
         int(c.generate_state(1)[0]) for c in children[cfg.n_reps :]
-    ]  # 10 python ints
+    ]  # python ints
 
     # set up intervention strengths
     if cfg.instrument_discrete:
