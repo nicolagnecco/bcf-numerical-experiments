@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from typing import Callable, Literal, Union
+from typing import Any, Callable, Literal, Union
 
 import numpy as np
 from sklearn.base import clone
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
+from src.bcf.helpers import split_X_and_Z
 from src.scenarios.generate_helpers import decompose_mat
 from src.utils.data_definitions import Tree
 from xgboost import XGBRegressor
@@ -16,7 +17,7 @@ from xgboost import XGBRegressor
 class CausalFunction:
     """Oracle for causal function"""
 
-    causal_function: Tree = Tree()
+    causal_function: Union[Tree, Any] = Tree()
     name: str = "causal_function"
     is_fitted_: bool = False
 
@@ -41,7 +42,7 @@ class CausalFunction:
 class IMPFunction:
     """Oracle for IMP function"""
 
-    causal_function: Tree = Tree()
+    causal_function: Union[Tree, Any] = Tree()
     instrument_matrix: np.ndarray = np.array([])
     confounder_cov: np.ndarray = np.array([])
     confounder_effect: np.ndarray = np.array([])
@@ -82,9 +83,10 @@ class IMPFunctionNonLin:
     """Oracle for IMP function when control function is possibly nonlinear"""
 
     causal_function: Callable[[np.ndarray], np.ndarray]
+    n_exog: int
+    confounder_effect: Callable[[np.ndarray], np.ndarray]
     instrument_matrix: np.ndarray = np.array([])
     confounder_cov: np.ndarray = np.array([])
-    confounder_effect: np.ndarray = np.array([])
     mode: Literal["exact", "computed"] = "exact"
     boosted_estimator: Union[RandomForestRegressor, XGBRegressor] = XGBRegressor()
     use_imp: bool = True
@@ -96,28 +98,37 @@ class IMPFunctionNonLin:
         X, y = check_X_y(X, y)
         n, p = X.shape
 
+        # split X and Z
+        X, Z = split_X_and_Z(X, self.n_exog)
+
+        # center X
+        self.X_mean = np.mean(X, axis=0)
+        X_centered = X - self.X_mean
+
+        # set theoretical quantities
         M = self.instrument_matrix
         S = self.confounder_cov
-        gamma = self.confounder_effect
 
         # compute imp
         if M.shape[1] > 0 and M.shape[1] <= p:
             Q, R = decompose_mat(M)
+            self.R_ = R
             self._use_imp_ = True
         else:
             self._use_imp_ = False
 
         self._use_imp_ = self._use_imp_ and self.use_imp
 
+        # Compute V
+        V = X - Z @ M.T
+
         if self._use_imp_:
             if self.mode == "exact":
-                self.delta_ = R @ np.linalg.inv(R.T @ S @ R) @ R.T @ S @ gamma
+                self.delta_ = R @ np.linalg.inv(R.T @ S @ R) @ R.T @ S
                 # print(f"Delta IMP: {self.delta_}")
             else:
                 self.boosted_estimator_ = clone(self.boosted_estimator)
-                self.delta_ = self.boosted_estimator_.fit(
-                    R @ X, y - self.causal_function(X)
-                )
+                self.boosted_estimator_.fit(X @ R, self.confounder_effect(V))
 
         self.is_fitted_ = True
 
@@ -128,7 +139,15 @@ class IMPFunctionNonLin:
 
         # predict data
         if self._use_imp_:
-            return self.causal_function(X) + (X @ self.delta_).ravel()
+            if self.mode == "exact":
+                return (
+                    self.causal_function(X)
+                    + self.confounder_effect((X @ self.delta_)).ravel()
+                )
+            else:
+                return self.causal_function(X) + self.boosted_estimator_.predict(
+                    X @ self.R_
+                )
         else:
             return self.causal_function(X)
 

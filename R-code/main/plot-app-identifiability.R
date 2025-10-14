@@ -1,8 +1,8 @@
 source("main/dependencies.R")
 
 # Constant definitions
-MSEFILE1 <- "../python/outputs/exp-identifiability/nonlinear_g_True-instrument_discrete_False/20251014_112348/mses.csv"
-MSEFILE2 <- "../python/outputs/exp-identifiability/nonlinear_g_False-instrument_discrete_True/20251014_102611/mses.csv"
+MSEFILE1 <- "../python/outputs/exp-identifiability/nonlinear_g_True-instrument_discrete_False/20251014_162352//mses.csv"
+MSEFILE2 <- "../python/outputs/exp-identifiability/nonlinear_g_False-instrument_discrete_True/20251014_154458/mses.csv"
 FILENAME1 <- glue::glue("../results/figures/app-identifiability-mse-1.pdf")
 FILENAME2 <- glue::glue("../results/figures/app-identifiability-mse-2.pdf")
 
@@ -36,7 +36,7 @@ breaks_vec <- methods_map$code                   # legend/order anchor
 # g nonlinear; instrument continuous
 ## 3) Prep data with factor levels matching your mapping
 mses <- bind_rows(
-  read_csv(MSEFILE1)
+  read_csv(MSEFILE1),
 ) %>% 
   # filter(rep_id == 4) %>%
   group_by(model, int_par) %>% 
@@ -52,7 +52,7 @@ mses2 <- mses %>%
 ## 4) Plot (color + shape share the same legend)
 gg <- ggplot(mses2 %>% arrange(desc(model_)),
              aes(x = int_par, y = mse, color = model_, shape = model_)) +
-  # geom_ribbon(aes(x = int_par,ymin=min_mse,ymax=max_mse, fill = model_), alpha = .25) +
+  geom_ribbon(aes(x = int_par,ymin=min_mse,ymax=max_mse, fill = model_), alpha = .25) +
   geom_line() +
   geom_point(fill = "white", size = 2, stroke = 0.75, alpha = 0.75) +
   scale_color_manual(values = col_vec,
@@ -80,8 +80,8 @@ mses <- bind_rows(
   # filter(rep_id == 2) %>% 
   group_by(model, int_par) %>% 
   summarise(mse = mean(test_mse),
-            max_mse = quantile(test_mse, p=.9),
-            min_mse = quantile(test_mse, p=.1))
+            max_mse = quantile(test_mse, p=1),
+            min_mse = quantile(test_mse, p=0))
 
 mses2 <- mses %>%
   filter(model %in% breaks_vec) %>%

@@ -48,14 +48,16 @@ def create_dataframe(
 
 def simulation_run(
     *,
-    methods,
+    selected_methods,
     n_train,
     n_test,
     num_basis,
     g,
+    is_nonlinear_g,
     instrument_strength,
     is_instrument_discrete,
     noise_sd,
+    noise_sd_Y,
     int_train,
     ints_test,
     rng_numpy,
@@ -64,8 +66,8 @@ def simulation_run(
     # Sample random function f
     f = radial2D(num_basis=num_basis, seed=rng_numpy)
 
-    #  generate datasets
-    X_train, y_train, Z_train, _, _, _ = generate_data_radial_f(
+    #  generate training data
+    X_train, y_train, Z_train, S, M, g_scaled = generate_data_radial_f(
         n_train,
         int_train,
         f,
@@ -73,18 +75,80 @@ def simulation_run(
         instrument_strength=instrument_strength,
         instrument_discrete=is_instrument_discrete,
         noise_sd=noise_sd,
+        noise_sd_Y=noise_sd_Y,
+        scale_g=True,
         seed=rng_numpy,
     )
 
+    # set up methods
+    # Define methods
+    methods = [
+        (
+            "BCF",
+            BCF(
+                n_exog=Z_train.shape[1],
+                continuous_mask=np.repeat(True, X_train.shape[1]),
+                passes=10,
+                fx=XGBRegressor(learning_rate=0.05),
+                gv=XGBRegressor(learning_rate=0.05),
+                fx_imp=XGBRegressor(learning_rate=0.05),
+            ),
+        ),
+        (
+            "CF",
+            BCF(
+                n_exog=Z_train.shape[1],
+                continuous_mask=np.repeat(True, X_train.shape[1]),
+                passes=10,
+                fx=XGBRegressor(learning_rate=0.05),
+                gv=XGBRegressor(learning_rate=0.05),
+                fx_imp=XGBRegressor(learning_rate=0.05),
+                predict_imp=False,
+            ),
+        ),
+        (
+            "OLS",
+            OLS(fx=XGBRegressor(learning_rate=0.05)),
+        ),
+        (
+            "IMP",
+            IMPFunctionNonLin(
+                causal_function=f,
+                instrument_matrix=M,
+                n_exog=Z_train.shape[1],
+                confounder_cov=S,
+                confounder_effect=g_scaled,
+                mode="computed",
+                boosted_estimator=XGBRegressor(learning_rate=0.05),
+            ),
+        ),
+        (
+            "Causal",
+            IMPFunctionNonLin(
+                causal_function=f,
+                instrument_matrix=M,
+                n_exog=Z_train.shape[1],
+                confounder_cov=S,
+                confounder_effect=g_scaled,
+                mode="computed",
+                boosted_estimator=XGBRegressor(learning_rate=0.05),
+                use_imp=False,
+            ),
+        ),
+    ]
+
+    # generate test datasets
     test_datasets = [
         generate_data_radial_f(
             n_test,
             int_par,
             f,
-            g,
+            g_scaled,
             instrument_strength=instrument_strength,
             instrument_discrete=False,
             noise_sd=noise_sd,
+            noise_sd_Y=noise_sd_Y,
+            scale_g=False,
             seed=rng_numpy,
         )
         for int_par in ints_test
@@ -98,15 +162,15 @@ def simulation_run(
     ]
     dat_methods = pd.DataFrame(columns=col_names + ["model", "env", "int_par"])
 
+    methods_ = filter_methods(methods, selected_methods)
     # fit/predict/evaluate methods
-    for method_name, method in methods:
+    for method_name, method in methods_:
         # fit methods
         print(method_name)
 
         expected_classes = (IMPFunctionNonLin, BCF, BCFMLP, ConstantFunc, OLS)
 
         if isinstance(method, IMPFunctionNonLin):
-            method.causal_function = f
             method.fit(np.hstack([X_train, Z_train]), y_train, seed=seed_torch)
 
         elif isinstance(method, (BCF, BCFMLP)):
@@ -136,7 +200,7 @@ def simulation_run(
             y_hat=y_hat,
             env="train",
             model=method_name,
-            int_par=0.5,
+            int_par=int_train,
             col_names=col_names,
         )
 
@@ -197,129 +261,49 @@ def main(cfg: DictConfig) -> None:
     # Set seeds
     base_seed = seed_from_string(cfg.run_name)
 
-    # RNG for generating data
-    rng_numpy = np.random.default_rng(base_seed)
+    ss = SeedSequence(base_seed)
+    children = ss.spawn(cfg.n_reps * 2)  # child sequences
+
+    # RNGs for generating data
+    rng_numpy_children = children[: cfg.n_reps]  # child sequences
 
     # Seeds for each algorithms using torch, if applicable
-    ss = SeedSequence(base_seed)
-    children = ss.spawn(cfg.n_reps)  # 10 child sequences
-    seeds_torch = [int(c.generate_state(1)[0]) for c in children]  # 10 python ints
+    seeds_torch = [
+        int(c.generate_state(1)[0]) for c in children[cfg.n_reps :]
+    ]  # 10 python ints
 
-    #  Generate random function f and oracle quantities
+    # set up intervention strengths
     if cfg.instrument_discrete:
         intvec = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 3.99]
     else:
         intvec = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 3.99]
 
-    f = radial2D(num_basis=cfg.num_basis, seed=rng_numpy)
-
+    # Generate function g
     if cfg.nonlinear_g:
-        g = (
-            lambda v: np.sin(v[:, 0] * v[:, 1])
-            + 8 * np.tanh(v[:, 0] / 8)
-            + 8 * np.tanh(v[:, 1] / 8)
-        )
-        g = radial2D(num_basis=cfg.num_basis, seed=rng_numpy)
-        scale_g = True
+        g = lambda v: (np.tanh(v[:, 0] + v[:, 1]))
     else:
         g = lambda v: v[:, 0] + v[:, 1]
-        scale_g = False
-
-    X, _, Z, S, M, gamma = generate_data_radial_f(
-        cfg.n_train,
-        intvec[0],
-        f,
-        g=g,
-        instrument_strength=cfg.instrument_strength,
-        instrument_discrete=cfg.instrument_discrete,
-        noise_sd=cfg.noise_sd,
-        scale_g=scale_g,
-        seed=rng_numpy,
-    )
-
-    # Define methods
-    methods = [
-        (
-            "BCF",
-            BCF(
-                n_exog=Z.shape[1],
-                continuous_mask=np.repeat(True, X.shape[1]),
-                passes=10,
-                fx=XGBRegressor(learning_rate=0.05),
-                gv=(
-                    XGBRegressor(learning_rate=0.05)
-                    if cfg.nonlinear_g
-                    else XGBRegressor(learning_rate=0.05)
-                ),
-                fx_imp=XGBRegressor(learning_rate=0.05),
-            ),
-        ),
-        (
-            "CF",
-            BCF(
-                n_exog=Z.shape[1],
-                continuous_mask=np.repeat(True, X.shape[1]),
-                passes=10,
-                fx=XGBRegressor(learning_rate=0.05),
-                gv=(
-                    XGBRegressor(learning_rate=0.05)
-                    if cfg.nonlinear_g
-                    else XGBRegressor(learning_rate=0.05)
-                ),
-                fx_imp=XGBRegressor(learning_rate=0.05),
-                predict_imp=False,
-            ),
-        ),
-        (
-            "OLS",
-            OLS(fx=XGBRegressor(learning_rate=0.05)),
-        ),
-        (
-            "IMP",
-            IMPFunctionNonLin(
-                causal_function=f,
-                instrument_matrix=M,
-                n_exog=Z.shape[1],
-                confounder_cov=S,
-                confounder_effect=gamma,
-                mode="computed",
-                boosted_estimator=XGBRegressor(learning_rate=0.05),
-            ),
-        ),
-        (
-            "Causal",
-            IMPFunctionNonLin(
-                causal_function=f,
-                instrument_matrix=M,
-                n_exog=Z.shape[1],
-                confounder_cov=S,
-                confounder_effect=gamma,
-                mode="computed",
-                boosted_estimator=XGBRegressor(learning_rate=0.05),
-                use_imp=False,
-            ),
-        ),
-    ]
 
     # iterate simulations over n_reps
     all_methods = []
     all_mses = []
-    methods_ = filter_methods(methods, cfg.selected_methods)
 
     for b in range(cfg.n_reps):
         print(f"Iteration {b+1} out of {cfg.n_reps}")
         res_methods_, res_mses_ = simulation_run(
-            methods=methods_,
+            selected_methods=cfg.selected_methods,
             n_train=cfg.n_train,
             n_test=cfg.n_test,
             num_basis=cfg.num_basis,
-            g=gamma,
+            g=g,
+            is_nonlinear_g=cfg.nonlinear_g,
             instrument_strength=cfg.instrument_strength,
             is_instrument_discrete=cfg.instrument_discrete,
             noise_sd=cfg.noise_sd,
+            noise_sd_Y=cfg.noise_sd_Y,
             int_train=intvec[0],
             ints_test=intvec,
-            rng_numpy=rng_numpy,
+            rng_numpy=rng_numpy_children[b],
             seed_torch=seeds_torch[b],
         )
 

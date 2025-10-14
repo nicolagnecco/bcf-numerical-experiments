@@ -5,6 +5,7 @@ instrument_strength: 1.0
 instrument_discrete: false
 nonlinear_g: true
 noise_sd: 0.1
+noise_sd_Y: 0.1
 n_reps: 20
 selected_methods:
  - "BCF"
