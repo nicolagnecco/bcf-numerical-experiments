@@ -1,21 +1,28 @@
-n_train: 1000
+n_train: 5000
 n_test: 1000
 int_train: 0.5
 ints_test: [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 3.99]
 num_basis: 10
 instrument_strength: 1.0
 noise_sd: 0.1
-seed_numpy: 1000
-seed_torch: 1234
+noise_sd_Y: 0.1
 n_reps: 10
-selected_methods: ["BCF-MLP"]
+selected_methods: 
+ - "BCF-MLP"
+ - "IMP"
+ - "Causal"
+ - "CF-MLP"
+ - "CF-MLP-2"
+ - "CF-MLP-3"
+ - "CF-MLP-4"
+ - "OLS-MLP"
 
-run_name: baseline
+run_name: regularization-experiment
 
 hydra:
   run:
     # Output directory:
-    dir: outputs/exp-regularization/${now:%Y%m%d_%H%M%S}-${run_name}
+    dir: outputs/exp-regularization/${now:%Y%m%d_%H%M%S}
   job:
     # Change into the run directory before executing your script
     chdir: true
