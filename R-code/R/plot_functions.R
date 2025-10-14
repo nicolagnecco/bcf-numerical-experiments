@@ -17,19 +17,25 @@ my_palette <- list(
 
 
 
-METHODS <- c("BCF","IMP", "OLS", 
+METHODS <- c("BCF", "CF-small", "IMP", "AnchorBooster-small", "GroupDRO", 
+             "OLS", "LS",
              "ControlTwicing","ControlTwicing_no_imp",  
              "OLS-old", "OLSTwicing", "ConstFunc",
              "Causal")
 
-METHODS_LBL <- c("BCF", "IMP", "LS", "ControlTwicing","ControlTwicing_no_imp",
+METHODS_LBL <- c("BCF", "CF", "IMP", "AnchorBooster", "GroupDRO",
+                 "LS", "LS",
+                 "ControlTwicing","ControlTwicing_no_imp",
                  "Tree", "Tree + Linear","Constant",
                  "Structural"
                  ) 
 
 methods_tbl <- list(
   c("method" = "BCF", "color" = my_palette$c3, "shape" = 21, "size" = 1, "linetype" = "solid"),
-  c("method" = "LS", "color" = my_palette$c1, "shape" = 21, "size" = 1, "linetype" = "solid"),
+  c("method" = "CF", "color" = my_palette$green, "shape" = 21, "size" = 1, "linetype" = "solid"),
+  c("method" = "LS", "color" = my_palette$yellow, "shape" = 21, "size" = 1, "linetype" = "solid"),
+  c("method" = "AnchorBooster", "color" = my_palette$red, "shape" = 21, "size" = 1, "linetype" = "solid"),
+  c("method" = "GroupDRO", "color" = my_palette$blue2, "shape" = 21, "size" = 1, "linetype" = "solid"),
   c("method" = "Constant", "color" = my_palette$darkgrey, "shape" = 19, "size" = 0.5, "linetype" = "dotted"),
   c("method" = "IMP", "color" = my_palette$c2, "shape" = 21, "size" = 1, "linetype" = "solid"),
   c("method" = "Structural", "color" = my_palette$darkgrey, "shape" = 17, "size" = 0.5, "linetype" = "dotted"),

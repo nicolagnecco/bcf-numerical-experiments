@@ -2,8 +2,9 @@ source("main/dependencies.R")
 
 # Constant definitions
 HOUSEDATA <- "../data/processed/housing-temp.csv"
-RES_TEST <- "../results/output_data/test_mse.csv"
-RES_TRAIN <- "../results/output_data/training_mse.csv"
+RES_TEST <- "../results/output_data/housing-data/20251013_093050/test_mse-new.csv"
+RES_TRAIN <- "../results/output_data/housing-data/20251013_093050/training_mse.csv"
+
 FIG_NAME <- "../results/figures/housing_methods.pdf"
 
 
@@ -39,17 +40,18 @@ AREA_LBLS <- c(
 )
 
 # Read data
-dat_mse <-
-    bind_rows(
-        tibble(
-            set = "Testing",
-            read_csv(RES_TEST)
-        ),
-        tibble(
-            set = "Training",
-            read_csv(RES_TRAIN)
-        )
-    ) %>%
+dat0 <- bind_rows(
+  tibble(
+    set = "Testing",
+    read_csv(RES_TEST)
+  ),
+  tibble(
+    set = "Training",
+    read_csv(RES_TRAIN)
+  )
+)
+
+dat_mse <- dat1 %>%
     mutate(parts = str_split(Rep, "_")) %>%
     unnest_wider(parts, names_sep = "_") %>%
     select(-Rep) %>%
@@ -76,16 +78,16 @@ dat_ols <- dat %>%
 dat2plot <- dat %>%
     mutate(Split = factor(Split, levels = dat_ols$Split))
 
-# Plot results for BCF, least squares, and constant model (average).
-# - BCF = [f_0 = XGBoost(), gamma_0 = XGBoost(), f_imp = XGBoost()];
-#    number of iterations = 10;
-# - LS = XGBoost().
-dat_methods <- dat2plot %>%
-    filter(Method %in% c("BCF", "LS", "AVE")) %>%
-    mutate(Method = if_else(Method == "LS", "OLS",
-        if_else(Method == "AVE", "ConstFunc", Method)
-    )) %>%
-    mutate(Method = refactor_methods(Method, rev = TRUE))
+# Plot results for BCF, least squares, and other models.
+dat_methods <- dat2plot %>% 
+  filter(Method %in% c(
+    "LS",
+    "AnchorBooster-small",
+    "CF-small", 
+    "GroupDRO", 
+    "BCF"
+  )) %>% 
+  mutate(Method = refactor_methods(Method, rev = TRUE))
 
 gg <- ggplot(dat_methods %>% arrange(Method)) +
     facet_wrap(~set) +
