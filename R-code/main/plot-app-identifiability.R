@@ -52,7 +52,7 @@ mses2 <- mses %>%
 ## 4) Plot (color + shape share the same legend)
 gg <- ggplot(mses2 %>% arrange(desc(model_)),
              aes(x = int_par, y = mse, color = model_, shape = model_)) +
-  geom_ribbon(aes(x = int_par,ymin=min_mse,ymax=max_mse, fill = model_), alpha = .25) +
+  # geom_ribbon(aes(x = int_par,ymin=min_mse,ymax=max_mse, fill = model_), alpha = .25) +
   geom_line() +
   geom_point(fill = "white", size = 2, stroke = 0.75, alpha = 0.75) +
   scale_color_manual(values = col_vec,
