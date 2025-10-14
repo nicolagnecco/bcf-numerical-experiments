@@ -1,0 +1,24 @@
+n_train: 5000
+n_test: 1000
+num_basis: 10
+instrument_strength: 1.0
+instrument_discrete: false
+nonlinear_g: true
+noise_sd: 0.1
+n_reps: 20
+selected_methods:
+ - "BCF"
+ - "CF"
+ - "IMP"
+ - "Causal"
+ - "OLS"
+
+run_name: nonlinear_g_${nonlinear_g}-instrument_discrete_${instrument_discrete}
+
+hydra:
+  run:
+    # Output directory:
+    dir: outputs/exp-identifiability/${run_name}/${now:%Y%m%d_%H%M%S}
+  job:
+    # Change into the run directory before executing your script
+    chdir: true
