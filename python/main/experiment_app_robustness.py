@@ -184,7 +184,7 @@ def simulation_run(
             noise_sd=noise_sd,
             noise_sd_Y=noise_sd_Y,
             scale_g=False,
-            seed=rng_numpy,
+            seed=seed_from_string(f"robustness-int={int_par}"),
         )
         for int_par in ints_test
     ]
@@ -261,6 +261,7 @@ def simulation_run(
             dat_methods = pd.concat([dat_methods, inner_dat], ignore_index=True)
 
             test_mse = compute_mse(y_hat, y)
+            var_y = np.var(y)
 
             mses = pd.concat(
                 [
@@ -270,6 +271,7 @@ def simulation_run(
                             "model": [method_name],
                             "test_mse": [test_mse],
                             "int_par": [int_par],
+                            "var_y": [var_y],
                         }
                     ),
                 ],

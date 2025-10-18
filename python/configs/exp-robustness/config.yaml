@@ -7,8 +7,8 @@ nonlinear_g: false
 noise_sd: 0.1
 noise_sd_Y: 0.1
 int_train: 0.5
-n_reps: 1 # !!! 10
-rep_id: 1
+n_reps: 1
+rep_id: 1 # !!!
 selected_methods:
  - "BCF"
 #  - "BCF-MLP-small"
