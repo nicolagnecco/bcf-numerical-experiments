@@ -6,17 +6,19 @@ instrument_discrete: false
 nonlinear_g: false
 noise_sd: 0.1
 noise_sd_Y: 0.1
+int_train: 0.5
 n_reps: 1 # !!! 10
+rep_id: 1
 selected_methods:
  - "BCF"
- - "BCF-MLP-small"
- - "BCF-MLP-medium"
+#  - "BCF-MLP-small"
+#  - "BCF-MLP-medium"
  - "BCF-MLP-large"
  - "IMP"
  - "Causal"
  - "OLS"
 
-run_name: n_${n_train}-instr_str_${instrument_strength}
+run_name: n_${n_train}-int_train_${int_train}-rep_id_${rep_id}
 
 hydra:
   run:

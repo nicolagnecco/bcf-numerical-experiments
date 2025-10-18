@@ -294,7 +294,7 @@ def filter_methods(methods, selected_methods: Union[List[str], Literal["all"]]):
 )
 def main(cfg: DictConfig) -> None:
     # Set seeds
-    base_seed = seed_from_string(cfg.run_name)
+    base_seed = seed_from_string(f"robustness-experiment-rep_id={cfg.rep_id}")
 
     ss = SeedSequence(base_seed)
     children = ss.spawn(cfg.n_reps * 2)  # child sequences
@@ -307,7 +307,7 @@ def main(cfg: DictConfig) -> None:
         int(c.generate_state(1)[0]) for c in children[cfg.n_reps :]
     ]  # python ints
 
-    # set up intervention strengths
+    # set up test intervention strengths
     intvec = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 3.99]
 
     # Generate function g
@@ -340,7 +340,7 @@ def main(cfg: DictConfig) -> None:
             is_instrument_discrete=cfg.instrument_discrete,
             noise_sd=cfg.noise_sd,
             noise_sd_Y=cfg.noise_sd_Y,
-            int_train=intvec[0],
+            int_train=cfg.int_train,
             ints_test=intvec,
             rng_numpy=rng_numpy_children[b],
             seed_torch=seeds_torch[b],
