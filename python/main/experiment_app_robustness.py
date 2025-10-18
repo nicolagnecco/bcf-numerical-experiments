@@ -184,7 +184,7 @@ def simulation_run(
             noise_sd=noise_sd,
             noise_sd_Y=noise_sd_Y,
             scale_g=False,
-            seed=seed_from_string(f"robustness-int={int_par}"),
+            seed=rng_numpy,
         )
         for int_par in ints_test
     ]
