@@ -18,7 +18,7 @@ selected_methods:
  - "Causal"
  - "OLS"
 
-run_name: n_${n_train}-int_train_${int_train}-rep_id_${rep_id}
+run_name: n_${n_train}-inst_str_${instrument_strength}-rep_id_${rep_id}
 
 hydra:
   run:
