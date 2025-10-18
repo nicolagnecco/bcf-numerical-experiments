@@ -18,6 +18,8 @@ from src.scenarios.generate_helpers import radial2D
 from src.simulations.simulations_funcs import compute_mse
 from xgboost import XGBRegressor
 
+LR = 0.25
+
 
 #  ---- Function definitions
 def seed_from_string(s: str, offset: int = 0) -> int:
@@ -74,39 +76,28 @@ def simulation_run(
         instrument_discrete=is_instrument_discrete,
         noise_sd=noise_sd,
         noise_sd_Y=noise_sd_Y,
-        scale_g=True,
+        scale_g=False,
         seed=rng_numpy,
     )
 
     # set up methods
     # Define methods
+    bcf = BCF(
+        n_exog=Z_train.shape[1],
+        continuous_mask=np.repeat(True, X_train.shape[1]),
+        passes=75,
+        fx=XGBRegressor(learning_rate=0.05),
+        gv=XGBRegressor(learning_rate=0.05),
+        fx_imp=XGBRegressor(learning_rate=LR),
+        predict_imp=True,
+        tol_delta=5e-3,
+    )
     methods = [
-        (
-            "BCF",
-            BCF(
-                n_exog=Z_train.shape[1],
-                continuous_mask=np.repeat(True, X_train.shape[1]),
-                passes=10,
-                fx=XGBRegressor(learning_rate=0.05),
-                gv=XGBRegressor(learning_rate=0.05),
-                fx_imp=XGBRegressor(learning_rate=0.05),
-            ),
-        ),
-        (
-            "CF",
-            BCF(
-                n_exog=Z_train.shape[1],
-                continuous_mask=np.repeat(True, X_train.shape[1]),
-                passes=10,
-                fx=XGBRegressor(learning_rate=0.05),
-                gv=XGBRegressor(learning_rate=0.05),
-                fx_imp=XGBRegressor(learning_rate=0.05),
-                predict_imp=False,
-            ),
-        ),
+        ("BCF", bcf),
+        ("CF", bcf),
         (
             "OLS",
-            OLS(fx=XGBRegressor(learning_rate=0.05)),
+            OLS(fx=XGBRegressor(learning_rate=LR)),
         ),
         (
             "IMP",
@@ -117,7 +108,7 @@ def simulation_run(
                 confounder_cov=S,
                 confounder_effect=g_scaled,
                 mode="computed",
-                boosted_estimator=XGBRegressor(learning_rate=0.05),
+                boosted_estimator=XGBRegressor(learning_rate=LR),
             ),
         ),
         (
@@ -129,7 +120,7 @@ def simulation_run(
                 confounder_cov=S,
                 confounder_effect=g_scaled,
                 mode="computed",
-                boosted_estimator=XGBRegressor(learning_rate=0.05),
+                boosted_estimator=XGBRegressor(learning_rate=LR),
                 use_imp=False,
             ),
         ),
@@ -172,7 +163,10 @@ def simulation_run(
             method.fit(np.hstack([X_train, Z_train]), y_train, seed=seed_torch)
 
         elif isinstance(method, (BCF, BCFMLP)):
-            method.fit(np.hstack([X_train, Z_train]), y_train, seed=seed_torch)
+            if method_name == "BCF":
+                method.fit(np.hstack([X_train, Z_train]), y_train, seed=seed_torch)
+            if method_name == "CF":
+                method._use_imp_ = False
 
         elif isinstance(method, ConstantFunc):
             method.fit(X_train, y_train, Z_train)
@@ -278,7 +272,14 @@ def main(cfg: DictConfig) -> None:
 
     # Generate function g
     if cfg.nonlinear_g:
-        g = lambda v: (np.tanh(v[:, 0] + v[:, 1]))
+
+        def g_(v):
+            return np.tanh(v[:, 0] + v[:, 1])
+
+        rng = np.random.default_rng(42)
+        v = rng.normal(size=(10000, 2))
+        mu, sigma = np.mean(g_(v)), np.std(g_(v))
+        g = lambda v: (g_(v) - mu) / sigma * np.sqrt(2)
     else:
         g = lambda v: v[:, 0] + v[:, 1]
 

@@ -2,8 +2,8 @@ n_train: 5000
 n_test: 1000
 num_basis: 10
 instrument_strength: 1.0
-instrument_discrete: false
-nonlinear_g: true
+instrument_discrete: true
+nonlinear_g: false
 noise_sd: 0.1
 noise_sd_Y: 0.1
 n_reps: 20
@@ -14,7 +14,7 @@ selected_methods:
  - "Causal"
  - "OLS"
 
-run_name: nonlinear_g_${nonlinear_g}-instrument_discrete_${instrument_discrete}
+run_name: nonlin_g_${nonlinear_g}-inst_disc_${instrument_discrete}-n_${n_train}
 
 hydra:
   run:
