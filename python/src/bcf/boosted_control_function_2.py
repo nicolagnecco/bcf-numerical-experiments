@@ -89,6 +89,7 @@ class BCF(BaseEstimator):
     gv: ModelRegressor = LinearRegression(fit_intercept=False)
     alphas = 10 ** np.arange(-5.0, 6.0)
     predict_imp: bool = True
+    tol_delta: float = 1e-4  # stop if fx stops changing in setp 1
 
     def __post_init__(self):
         """Initialization steps post object instantiation."""
@@ -159,7 +160,8 @@ class BCF(BaseEstimator):
         # Step 0
         self.y_mean_ = np.mean(y)
         y_centered = y - self.y_mean_
-        f_X = 0
+        f_X = np.zeros_like(y_centered)
+        y_norm = np.linalg.norm(y_centered) + 1e-12
 
         # Step 1
         for k in tqdm(range(self.passes)):
@@ -171,7 +173,18 @@ class BCF(BaseEstimator):
             # Fit flexible model using X
             y_ = y_centered - gamma_V  # type: ignore
             self.fx_.fit(X_original, y_)
-            f_X = self.fx_.predict(X_original)
+            f_X_new = self.fx_.predict(X_original)
+
+            # Check relative change in f(X)
+            delta_f = np.linalg.norm(f_X_new - f_X) / y_norm
+            f_X = f_X_new
+
+            # Store number of passes
+            self.n_passes_ = k + 1
+
+            # If update in f too small exit loop
+            if delta_f < self.tol_delta:
+                break
 
         # Step 2
         y_ = y_centered - f_X
