@@ -51,7 +51,7 @@ dat0 <- bind_rows(
   )
 )
 
-dat_mse <- dat1 %>%
+dat_mse <- dat0 %>%
     mutate(parts = str_split(Rep, "_")) %>%
     unnest_wider(parts, names_sep = "_") %>%
     select(-Rep) %>%
@@ -85,7 +85,7 @@ dat_methods <- dat2plot %>%
     "AnchorBooster-small",
     "CF-small", 
     "GroupDRO", 
-    "BCF"
+    "BCF", "AVE"
   )) %>% 
   mutate(Method = refactor_methods(Method, rev = TRUE))
 
@@ -120,5 +120,5 @@ gg
 
 save_myplot(
     plt = gg, plt_nm = FIG_NAME,
-    width = 2, height = 2
+    width = 2.25, height = 2.25
 )

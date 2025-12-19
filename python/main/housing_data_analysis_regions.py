@@ -97,45 +97,9 @@ def get_models() -> ListOfModels:
             ),  # Latitude and Longitude
         },
         {
-            "name": "Anchor-check",
-            "instance": AnchorRegression(
-                n_exog=2, continuous_mask=MASK, gamma=1.0  # Latitude and Longitude
-            ),
-        },
-        {
-            "name": "Anchor-small",
-            "instance": AnchorRegression(
-                n_exog=2, continuous_mask=MASK, gamma=2.0  # Latitude and Longitude
-            ),
-        },
-        {
-            "name": "Anchor-medium",
-            "instance": AnchorRegression(
-                n_exog=2, continuous_mask=MASK, gamma=5.0  # Latitude and Longitude
-            ),
-        },
-        {
-            "name": "Anchor-large",
-            "instance": AnchorRegression(
-                n_exog=2, continuous_mask=MASK, gamma=7.0  # Latitude and Longitude
-            ),
-        },
-        {
-            "name": "BCF-lin",
-            "instance": BCF(
-                n_exog=2,
-                continuous_mask=MASK,
-                fx=Ridge(),
-                gv=Ridge(),
-                fx_imp=XGBRegressor(learning_rate=0.05, base_score=0.0),
-                passes=10,
-            ),
-        },
-        {
             "name": "LS",
             "instance": OLS(fx=XGBRegressor(learning_rate=0.05, base_score=0.0)),
         },
-        {"name": "OLS", "instance": OLS(fx=LinearRegression())},
         {"name": "AVE", "instance": MeanModel()},
         {
             "name": "CF-medium",
@@ -171,50 +135,6 @@ def get_models() -> ListOfModels:
                 fx_imp=XGBRegressor(learning_rate=0.05, base_score=0.0),
                 passes=10,
                 predict_imp=False,
-            ),
-        },
-        {
-            "name": "BCF-MLP",
-            "instance": BCFMLP(
-                n_exog=2,  # Latitude and Longitude
-                continuous_mask=MASK,
-                fx_factory=make_mlp_sigmoid,
-                fx_imp_factory=make_mlp_sigmoid,
-                gv_factory=make_mlp_sigmoid,
-                epochs_step_1=1000,
-                epochs_step_2=1500,
-                lr_f=1e-3,
-                lr_g=1e-3,
-                lr_fimp=1e-4,
-                weight_decay_f=1e-3,
-                weight_decay_g=1e-3,
-                weight_decay_fimp=0.0,
-            ),
-        },
-        {
-            "name": "CF-MLP",
-            "instance": BCFMLP(
-                n_exog=2,  # Latitude and Longitude
-                continuous_mask=MASK,
-                fx_factory=make_mlp_sigmoid,
-                fx_imp_factory=make_mlp_sigmoid,
-                gv_factory=make_mlp_sigmoid_small,
-                epochs_step_1=1000,
-                lr_f=1e-3,
-                lr_g=1e-3,
-                weight_decay_f=2.5e-1,
-                weight_decay_g=2.5e-1,
-                predict_imp=False,
-            ),
-        },
-        {
-            "name": "OLS-MLP",
-            "instance": OLSMLP(
-                continuous_mask=MASK,
-                fx_factory=make_mlp_sigmoid,
-                epochs=1000,
-                lr=1e-3,
-                weight_decay=2.5e-3,
             ),
         },
         {
@@ -684,7 +604,7 @@ def main(cfg: DictConfig):
                 b=cfg.B,
                 X=X,
                 y=y,
-                Z=Z,
+                Z=Z,  # type: ignore
                 in_out_of_distribution_splitter=train_test_splitter,
                 val_percentage=val_percentage,
                 size_training_subsamples=max_train_size,
@@ -705,7 +625,7 @@ def main(cfg: DictConfig):
                     b=b,
                     X=X,
                     y=y,
-                    Z=Z,
+                    Z=Z,  # type: ignore
                     in_out_of_distribution_splitter=train_test_splitter,
                     val_percentage=val_percentage,
                     size_training_subsamples=max_train_size,
