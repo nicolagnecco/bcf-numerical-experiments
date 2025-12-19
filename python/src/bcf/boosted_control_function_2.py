@@ -89,7 +89,7 @@ class BCF(BaseEstimator):
     gv: ModelRegressor = LinearRegression(fit_intercept=False)
     alphas = 10 ** np.arange(-5.0, 6.0)
     predict_imp: bool = True
-    tol_delta: float = 1e-4  # stop if fx stops changing in setp 1
+    tol_delta: float = 1e-4  # stop if fx stops changing in step 1
 
     def __post_init__(self):
         """Initialization steps post object instantiation."""

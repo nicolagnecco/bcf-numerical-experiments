@@ -120,22 +120,6 @@ def simulation_run(
             ),
         ),
         (
-            "BCF-MLP-small",
-            factory_bcf_mlp(
-                n_exog=Z_train.shape[1],
-                continuous_mask=np.repeat(True, X_train.shape[1]),
-                hidden=[16],
-            ),
-        ),
-        (
-            "BCF-MLP-medium",
-            factory_bcf_mlp(
-                n_exog=Z_train.shape[1],
-                continuous_mask=np.repeat(True, X_train.shape[1]),
-                hidden=[32],
-            ),
-        ),
-        (
             "BCF-MLP-large",
             factory_bcf_mlp(
                 n_exog=Z_train.shape[1],
