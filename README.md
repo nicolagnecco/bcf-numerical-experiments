@@ -212,6 +212,19 @@ cd ../R-code
 Rscript --vanilla main/plot-temp_housing_data.R
 ```
 
+### Experiment on Robustness (Appendix F.3)
+To run this experiment and produce the figures, follow these steps. 
+
+```bash
+cd python
+
+python main/experiment_app_robustness.py -m n_train=500,1000,2500 rep_id=1,2,3,4,5,6,7,8,9,10
+
+cd ../R-code
+
+Rscript --vanilla main/plot-app-robustness.R
+```
+
 ## Contributors
 
 - [Nicola Gnecco](https://ngnecco.com)
