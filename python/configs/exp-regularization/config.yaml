@@ -22,7 +22,7 @@ run_name: regularization-experiment
 hydra:
   run:
     # Output directory:
-    dir: outputs/exp-regularization/${now:%Y%m%d_%H%M%S}
+    dir: ../results/output_data/exp-regularization/${now:%Y%m%d_%H%M%S}
   job:
     # Change into the run directory before executing your script
     chdir: true
