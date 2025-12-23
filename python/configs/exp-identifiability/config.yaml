@@ -19,7 +19,7 @@ run_name: nonlin_g_${nonlinear_g}-inst_disc_${instrument_discrete}-n_${n_train}
 hydra:
   run:
     # Output directory:
-    dir: outputs/exp-identifiability/${run_name}/${now:%Y%m%d_%H%M%S}
+    dir: ../results/output_data/exp-identifiability/${run_name}/${now:%Y%m%d_%H%M%S}
   job:
     # Change into the run directory before executing your script
     chdir: true
