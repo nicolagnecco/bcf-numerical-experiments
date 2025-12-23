@@ -5,16 +5,9 @@ MSEFILE1 <- "../results/output_data/exp-identifiability/nonlin_g_True-inst_disc_
 MSEFILE1small <- "../results/output_data/exp-identifiability/nonlin_g_True-inst_disc_False-n_1000/20251014_210846/mses.csv"
 MSEFILE2 <- "../results/output_data/exp-identifiability/nonlin_g_False-inst_disc_True-n_5000/20251015_094012/mses.csv"
 MSEFILE2small <- "../results/output_data/exp-identifiability/nonlin_g_False-inst_disc_True-n_1000/20251015_093636/mses.csv"
-CSVFILE <- "../results/output_data/exp-identifiability/nonlin_g_True-inst_disc_False-n_5000/20251014_204549/predictions.csv"
-CSVFILEsmall <- "../results/output_data/exp-identifiability/nonlin_g_True-inst_disc_False-n_1000/20251014_210846/predictions.csv"
 FILENAME1 <- glue::glue("../results/figures/app-identifiability-mse.pdf")
 
 
-dat <- read_csv(CSVFILEsmall)
-
-ggplot(dat %>% filter(model == "OLS", rep_id==0)) +
-  geom_point(aes(x = X1, y = y)) +
-  geom_point(aes(x = X1, y = y_hat), alpha = 0.5, col = "tomato")
 
 ## 1) Define your mapping in one place
 methods_map <- tibble::tibble(

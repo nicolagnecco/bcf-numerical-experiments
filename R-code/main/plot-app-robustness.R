@@ -9,9 +9,6 @@ files_mse <-
   c(list.files(root_folder, pattern="mses\\.csv", recursive = TRUE, 
                full.names=TRUE))
 
-files_preds <- list.files(root_folder, pattern="predictions\\.csv", recursive = TRUE, 
-                          full.names =TRUE)
-
 import_mse_file <- function(file_name){
   my_string <- str_match(file_name, 
                          "n_(\\d+)-inst_str_([0-9.]+)-rep_id_(\\d+)")

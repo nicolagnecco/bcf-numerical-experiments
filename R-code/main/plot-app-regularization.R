@@ -1,9 +1,6 @@
 source("main/dependencies.R")
 
 # Constant definitions
-PREDFILE <- "../results/output_data/exp-regularization/20250913_164707-baseline/predictions.csv"
-PREDFILE1 <- "../results/output_data/exp-regularization/20250914_124752-baseline/predictions.csv"
-PREDFILE2 <- "../results/output_data/exp-regularization/20250914_134013-baseline/predictions.csv"
 MSEFILE <- "../results/output_data/exp-regularization/20250913_164707-baseline/mses.csv"
 MSEFILE1 <- "../results/output_data/exp-regularization/20250914_124752-baseline/mses.csv"
 MSEFILE2 <- "../results/output_data/exp-regularization/20250914_134013-baseline/mses.csv"
@@ -88,21 +85,3 @@ gg <- ggplot(mses2 %>% arrange(desc(model_)),
   labs(x = "Perturbation Strength", y = "MSE"); gg
 
 save_myplot(plt = gg, plt_nm = FILENAME, width = 2.5, height = 2.5)
-
-# Predictions 
-df <- bind_rows(
-  read_csv(PREDFILE),
-  read_csv(PREDFILE1),
-  read_csv(PREDFILE2)
-)
-
-df2plot <- df %>% filter(
-  model %in% c("IMP", "BCF-MLP", "OLS-MLP"), 
-  rep_id == 5,
-  env == "test"
-)
-
-ggplot(df2plot) +
-  facet_grid(~ model) +
-  geom_point(aes(x = X2, y = y), alpha = .1) +
-  geom_point(aes(x = X2, y = y_hat, col = model), alpha = .25)
