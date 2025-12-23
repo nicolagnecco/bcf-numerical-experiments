@@ -316,27 +316,49 @@ def generate_data_radial_f(
     n,
     int_par,
     f,
+    g=lambda v: v[:, 0] + v[:, 1],
     instrument_strength: float = 0.1,
+    instrument_discrete: bool = False,
     noise_sd: float = 0.1,
+    noise_sd_Y: float = 0.0,
+    scale_g: bool = False,
     seed: Optional[Union[int, SeedSequence, BitGenerator, Generator]] = None,
 ):
     rng = np.random.default_rng(seed)
-    indicator = rng.binomial(1, int_par / 4, size=n)
-    Z1 = rng.uniform(0, int_par, size=n)
-    Z2 = rng.uniform(int_par, 4, size=n)
-    Z = Z1
-    Z[indicator == 1] = Z2[indicator == 1]
+    # %%
+
+    if instrument_discrete:
+        Z = 2 * rng.choice(2, size=n)
+    else:
+        Z1 = rng.uniform(0, int_par, size=n)
+        Z2 = rng.uniform(int_par, 4, size=n)
+        indicator = rng.binomial(1, int_par / 4, size=n)
+        Z = Z1
+        Z[indicator == 1] = Z2[indicator == 1]
+
     U1 = rng.normal(size=n)
     U2 = rng.normal(size=n)
 
     X1 = instrument_strength * Z + 1.0 * U1 + noise_sd * rng.normal(size=n)
     X2 = 1.0 * U2 + noise_sd * rng.normal(size=n)
     X = np.vstack([X1, X2]).T
-    Y = f(X) + U1 + U2
+    V = np.vstack([U1, U2]).T
+
+    if scale_g:
+        std_g = np.std(g(V))
+        mean_g = np.mean(g(V))
+        g_scaled = lambda v: (g(v) - mean_g) / std_g * np.sqrt(2)
+    else:
+        g_scaled = g
+
+    Y = f(X) + g_scaled(V) + noise_sd_Y * rng.normal(size=n)
 
     # compute oracle quantities
     S = np.eye(2) * (1.0 + noise_sd**2)
     M = np.array([[instrument_strength], [0.0]])
-    gamma = np.array([[1, 1]]).T
+    gamma = g_scaled
+
+    # Add 2nd dimension to Z
+    Z = Z[:, np.newaxis]
 
     return X, Y, Z, S, M, gamma

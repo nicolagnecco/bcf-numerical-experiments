@@ -1,0 +1,18 @@
+n_train: 1000
+n_test: 1000
+int_train: 0.5
+ints_test:
+- 0.5
+- 1
+- 1.5
+- 2
+- 2.5
+- 3
+- 3.5
+- 3.99
+num_basis: 10
+noise_sd: 0.1
+seed_numpy: 1000
+seed_torch: 1234
+n_reps: 10
+run_name: baseline

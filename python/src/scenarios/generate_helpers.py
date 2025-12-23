@@ -126,10 +126,11 @@ def radial2D(
     num_basis: int,
     x_min=[-5, -5],
     x_max=[5, 5],
+    sd_height=4.0,
     seed: Optional[Union[int, SeedSequence, BitGenerator, Generator]] = None,
 ):
     # The function below was taken from https://github.com/sorawitj/HSIC-X/blob/master/experiments/distribution_generalization_nonlinear.py#L142
-    # We modified the arguments
+    # We modified some of the parameters.
     def radial2D_helper(X, centres, num_basis):
         Phi = np.zeros((X.shape[0], num_basis))
         for i in range(num_basis):
@@ -139,9 +140,9 @@ def radial2D(
 
         return Phi
 
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed=seed)
     centres = rng.uniform(low=x_min, high=x_max, size=(num_basis, 2))
-    w = rng.normal(0, 4, size=num_basis)
+    w = rng.normal(0, sd_height, size=num_basis)
     f = lambda x: radial2D_helper(x, centres, num_basis) @ w
 
     return f

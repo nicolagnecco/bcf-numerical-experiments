@@ -190,7 +190,18 @@ Rscript --vanilla main/plot-nullspace_sim.R
 
 ### California housing dataset
 
-To run the experiment and produce the figures for the California housing dataset, follow these steps. 
+#### Plot existing results
+
+To plot the figures for the California housing dataset using **existing results**, run:
+
+```bash
+cd R-code
+
+Rscript --vanilla main/plot-temp_housing_data.R
+```
+
+#### Run the full experiment and generate figures
+To reproduce the full experiment from raw data and then plot the results, run the following steps in order:
 
 ```bash
 cd python
@@ -207,10 +218,118 @@ cd ../python
 
 python main/housing_data_analysis_regions.py
 
+```
+
+After the run completes, generate the figures:
+
+- Update the input file paths inside  
+  `main/plot-temp_housing_data.R` if needed (to match the outputs produced above).
+
+- Then run:
+
+```bash
 cd ../R-code
 
 Rscript --vanilla main/plot-temp_housing_data.R
 ```
+
+
+### Experiment on Robustness (Appendix F.3)
+#### Plot existing results
+To plot the figures using **existing results**, run:
+
+```bash
+cd ../R-code
+
+Rscript --vanilla main/plot-app-robustness.R
+```
+
+#### Run the full experiment and generate figures
+To reproduce the full experiment from raw data and then plot the results, run the following steps in order:
+
+```bash
+cd python
+
+python main/experiment_app_robustness.py -m n_train=500,1000,2500 rep_id=1,2,3,4,5,6,7,8,9,10
+```
+After the run completes, generate the figures:
+
+- Update the input file paths inside  
+  `main/plot-app-robustness.R` if needed (to match the outputs produced above).
+
+- Then run:
+
+```bash
+cd ../R-code
+
+Rscript --vanilla main/plot-app-robustness.R
+```
+
+### Experiment on Regularization (Appendix F.4)
+#### Plot existing results
+To plot the figures using **existing results**, run:
+```bash
+cd ../R-code
+
+Rscript --vanilla main/plot-app-regularization.R     
+```
+
+#### Run the full experiment and generate figures
+To reproduce the full experiment from raw data and then plot the results, run the following steps in order:
+
+```bash
+cd python
+
+python python main/experiment_app_regularization.py
+```
+After the run completes, generate the figures:
+
+- Update the input file paths inside  
+  `main/plot-app-regularization.R` if needed (to match the outputs produced above).
+
+- Then run:
+
+```bash
+cd ../R-code
+
+Rscript --vanilla main/plot-app-regularization.R        
+```
+
+### Experiment on Identifiability (Appendix F.5)
+#### Plot existing results
+To plot the figures using **existing results**, run:
+```bash
+cd ../R-code
+
+Rscript --vanilla main/plot-app-identifiability.R
+```
+
+#### Run the full experiment and generate figures
+To reproduce the full experiment from raw data and then plot the results, run the following steps in order:
+
+```bash
+cd python
+
+python main/experiment_app_identifiability.py n_train=1000 instrument_discrete=true nonlinear_g=false
+
+python main/experiment_app_identifiability.py n_train=5000 instrument_discrete=true nonlinear_g=false
+
+python main/experiment_app_identifiability.py n_train=1000 instrument_discrete=false nonlinear_g=true
+
+python main/experiment_app_identifiability.py n_train=5000 instrument_discrete=false nonlinear_g=true
+```
+After the run completes, generate the figures:
+
+- Update the input file paths inside  
+  `main/plot-app-identifiability.R` if needed (to match the outputs produced above).
+
+- Then run:
+```bash
+cd ../R-code
+
+Rscript --vanilla main/plot-app-identifiability.R
+```
+
 
 ## Contributors
 
