@@ -1,0 +1,16 @@
+n_train: 1000
+n_test: 1000
+num_basis: 10
+instrument_strength: 1.0
+instrument_discrete: true
+nonlinear_g: false
+noise_sd: 0.1
+noise_sd_Y: 0.1
+n_reps: 20
+selected_methods:
+- BCF
+- CF
+- IMP
+- Causal
+- OLS
+run_name: nonlin_g_${nonlinear_g}-inst_disc_${instrument_discrete}-n_${n_train}

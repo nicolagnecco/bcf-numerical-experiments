@@ -3,18 +3,12 @@ from dataclasses import dataclass
 from typing import Any, List
 
 import numpy as np
-import pandas as pd
 from numpy.typing import NDArray
-from sklearn.base import BaseEstimator, RegressorMixin, clone
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
-from sklearn.exceptions import NotFittedError
+from sklearn.base import BaseEstimator
 from sklearn.linear_model import LinearRegression
-from sklearn.linear_model._base import LinearModel
 from sklearn.model_selection import GridSearchCV
 from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
 from src.bcf.helpers import split_cont_cat, split_X_and_Z
-from src.bcf.reduced_rank_regression import cross_validate_rrr, learn_ker_M_0_T
-from tqdm import tqdm
 
 ModelRegressor = Any
 # %%
@@ -40,8 +34,8 @@ class AnchorRegression(BaseEstimator):
 
     Attributes:
     ----------
-    fy_xcat : LinearRegression
-        Fitted regression model Y ~ X_categorical.
+    fy_xcat : LinearRegression or None
+        Fitted regression model Y ~ X_categorical if there are categorical variables as determined by `continuous_mask`
 
     fy_xcont : LinearRegression
         Fitted regression model on transformed variables Y_tilde ~ X_tilde as described in Section 4.1 of https://arxiv.org/abs/1801.06229
@@ -124,8 +118,12 @@ class AnchorRegression(BaseEstimator):
         X_cont, X_cat = split_cont_cat(self.continuous_mask, X_original)
 
         # step 1. regress y ~ X_cat and get residuals
-        self.fy_xcat.fit(X_cat, y)
-        y_2 = y - self.fy_xcat.predict(X_cat)
+        if X_cat.shape[1] > 0:
+            self.fy_xcat.fit(X_cat, y)
+            y_2 = y - self.fy_xcat.predict(X_cat)
+        else:
+            self.fy_xcat = None
+            y_2 = y
 
         # step 2. regress y_2 ~ Z and X_cont ~ Z
         self.fy_z.fit(Z, y_2)
@@ -188,7 +186,11 @@ class AnchorRegression(BaseEstimator):
         X_cont, X_cat = split_cont_cat(self.continuous_mask, X_pred)
 
         # predict target variable
-        return self.fy_xcat.predict(X_cat) + self.fy_xcont.predict(X_cont)
+        if self.fy_xcat is not None:
+            y_cat = self.fy_xcat.predict(X_cat)
+        else:
+            y_cat = 0
+        return y_cat + self.fy_xcont.predict(X_cont)
 
 
 # %%

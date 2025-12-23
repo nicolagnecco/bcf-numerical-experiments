@@ -51,8 +51,10 @@ def train_fx_gv(
     y: torch.Tensor,
     epochs=100,
     batch_size=256,
-    lr=1e-3,
-    weight_decay=0e-4,
+    lr_f=1e-3,
+    lr_g=1e-3,
+    weight_decay_f=0e-4,
+    weight_decay_g=0e-4,
     device="cpu",
     verbose=True,
 ):
@@ -63,7 +65,9 @@ def train_fx_gv(
     ds = TensorDataset(X, V, y)
     dl = DataLoader(ds, batch_size=batch_size, shuffle=True)
     # opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
-    opt = make_opt_fx_gv(fx=fx, gv=gv, lr=lr, wd=weight_decay)
+    opt = make_opt_fx_gv(
+        fx=fx, gv=gv, lr_f=lr_f, lr_g=lr_g, wd_f=weight_decay_f, wd_g=weight_decay_g
+    )
 
     loss_fn = nn.MSELoss()
 
@@ -239,9 +243,18 @@ def param_groups_no_bias_decay(module, wd):
 
 
 # Joint optimizer for f(X) and g(V)
-def make_opt_fx_gv(fx, gv, lr=1e-3, wd=1.0):
-    groups = param_groups_no_bias_decay(fx, wd) + param_groups_no_bias_decay(gv, wd)
-    return torch.optim.AdamW(groups, lr=lr, betas=(0.9, 0.999), eps=1e-8)
+def make_opt_fx_gv(fx, gv, lr_f=1e-3, lr_g=1e-3, wd_f=1.0, wd_g=1.0):
+    # build param groups for f
+    groups_f = param_groups_no_bias_decay(fx, wd_f)
+    for p in groups_f:
+        p["lr"] = lr_f
+
+    groups_g = param_groups_no_bias_decay(gv, wd_g)
+    for p in groups_g:
+        p["lr"] = lr_g
+
+    groups = groups_f + groups_g
+    return torch.optim.AdamW(groups, betas=(0.9, 0.999), eps=1e-8)
 
 
 # Optimizer for f(X) and f_imp(X)

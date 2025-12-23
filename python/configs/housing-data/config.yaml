@@ -1,7 +1,7 @@
-data_path: "../data/processed/"
+data_path: "../data/processed/housing-temp.csv"
 save_predictions: false
-no_lat_lon: true  # Set to True to use only X, an False to use [X, Z]
-use_whole_data: false  # Set to True if don't split train/test
+no_lat_lon: true  # Set to True to use only X, and False to use [X, Z] as predictor for non-robust methods
+
 split_criterions: 
   - "North/South"
   - "South/North"
@@ -17,23 +17,26 @@ split_criterions:
   - "rest/NW"
 
 # Number of repetitions
-B: 1 
-# Validation as percentage training samples
+B: 10
+# Validation as percentage of in-distribution samples
 val_percentage: 0.2
 
 models_selected: 
  - "BCF"
+ - "CF-small"
+ - "CF-medium"
+ - "CF-large"
  - "LS"
-#  - "CF-small"
-#  - "CF-medium"
-#  - "CF-large"
-#  - "BCF-MLP"
-#  - "CF-MLP"
-#  - "AVE"
-#  - "OLS-MLP"
+ - "AnchorBooster-small"
+ - "AnchorBooster-medium"
+ - "AnchorBooster-large"
+ - "GroupDRO"
+ - "AVE"
+
 
 num_workers: 1
 debug: false
+max_train_size: null
 
 run_name: housing-data-experiment
 

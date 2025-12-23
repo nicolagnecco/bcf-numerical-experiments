@@ -5,6 +5,7 @@ from typing import Any, Callable, Optional, Tuple, Union
 import numpy as np
 import torch
 from numpy.typing import NDArray
+from pytorch_lightning import seed_everything
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
 from src.bcf.helpers import split_cont_cat, split_X_and_Z
@@ -28,10 +29,12 @@ class BCFMLP(BaseEstimator):
     gv_factory: Callable[[int], MLP]  # lambda x: MLP(in_dim=x)
     alphas: np.ndarray = 10 ** np.arange(-5.0, 6.0)
     predict_imp: bool = True
-    weight_decay_step_1: float = 1e-4
-    weight_decay_step_2: float = 0e-4
-    lr_step_1: float = 1e-3
-    lr_step_2: float = 1e-4
+    weight_decay_f: float = 1e-4
+    weight_decay_g: float = 1e-4
+    weight_decay_fimp: float = 0e-4
+    lr_f: float = 1e-3
+    lr_g: float = 1e-3
+    lr_fimp: float = 1e-4
     epochs_step_1: int = 100
     epochs_step_2: int = 100
 
@@ -77,9 +80,9 @@ class BCFMLP(BaseEstimator):
         # 5) Learn BCF
         # 5.0) Set seeds
         if seed is not None:
-            torch.manual_seed(seed)
-            np.random.seed(seed)
-            random.seed(seed)
+            seed_everything(
+                seed, workers=False
+            )  # NOTE: to ensure reproducibility when num_workers > 0 in DataLoaders, see https://docs.pytorch.org/docs/stable/notes/randomness.html#dataloader
 
         # 5.1) instanstiate estimators
         self.fx_ = self.fx_factory(self.n_X_cols_)
@@ -93,8 +96,10 @@ class BCFMLP(BaseEstimator):
             X=torch.from_numpy(X_scaled).float(),
             V=torch.from_numpy(V).float(),
             y=torch.from_numpy(y_scaled).float(),
-            weight_decay=self.weight_decay_step_1,
-            lr=self.lr_step_1,
+            weight_decay_f=self.weight_decay_f,
+            weight_decay_g=self.weight_decay_g,
+            lr_f=self.lr_f,
+            lr_g=self.lr_g,
             epochs=self.epochs_step_1,
         )
 
@@ -106,8 +111,8 @@ class BCFMLP(BaseEstimator):
                 X=torch.from_numpy(X_scaled).float(),
                 RX=torch.from_numpy(X_cont_rot).float(),
                 y=torch.from_numpy(y_scaled).float(),
-                weight_decay=self.weight_decay_step_2,
-                lr=self.lr_step_2,
+                weight_decay=self.weight_decay_fimp,
+                lr=self.lr_fimp,
                 epochs=self.epochs_step_2,
             )
 
@@ -197,9 +202,9 @@ class OLSMLP(BaseEstimator):
 
         # set seeds
         if seed is not None:
-            torch.manual_seed(seed)
-            np.random.seed(seed)
-            random.seed(seed)
+            seed_everything(
+                seed, workers=False
+            )  # NOTE: to ensure reproducibility when num_workers > 0 in DataLoaders, see https://docs.pytorch.org/docs/stable/notes/randomness.html#dataloader
 
         # instantiate neural net
         self.fx_ = self.fx_factory(self.n_X_cols_)

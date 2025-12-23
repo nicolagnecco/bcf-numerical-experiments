@@ -98,7 +98,9 @@ seed_torch = 42
 
 # %% Generate random function f and oracle quantities
 f = radial2D(num_basis=num_basis, seed=rng)
-X, y, Z, S, M, gamma = generate_data_radial_f(n_train, 3.5, f, noise_sd=0.1, seed=rng)
+X, y, Z, S, M, gamma = generate_data_radial_f(
+    n_train, 3.5, f, noise_sd=0.1, instrument_strength=1.0, seed=rng
+)
 Z = Z[:, np.newaxis]
 # %%
 if use_plotly:
@@ -143,48 +145,48 @@ methods = [
             fx_factory=fx_factory,
             fx_imp_factory=fx_imp_factory,
             gv_factory=gv_factory,
-            epochs_step_1=1000,
-            epochs_step_2=1500,
+            epochs_step_1=500,
+            epochs_step_2=1000,
             lr_step_1=1e-3,
             lr_step_2=1e-4,
             weight_decay_step_1=1e-3,
             weight_decay_step_2=0.0,
         ),
     ),
-    (
-        "CF-MLP",
-        BCFMLP(
-            n_exog=Z.shape[1],
-            continuous_mask=np.repeat(True, X.shape[1]),
-            fx_factory=fx_factory,
-            fx_imp_factory=fx_imp_factory,
-            gv_factory=gv_factory,
-            epochs_step_1=1000,
-            lr_step_1=1e-3,
-            weight_decay_step_1=0e-3,
-            predict_imp=False,
-        ),
-    ),
-    (
-        "CF-MLP-2",
-        BCFMLP(
-            n_exog=Z.shape[1],
-            continuous_mask=np.repeat(True, X.shape[1]),
-            fx_factory=fx_factory,
-            fx_imp_factory=fx_imp_factory,
-            gv_factory=gv_factory,
-            epochs_step_1=1000,
-            lr_step_1=1e-3,
-            weight_decay_step_1=2.5e-1,
-            predict_imp=False,
-        ),
-    ),
+    # (
+    #     "CF-MLP",
+    #     BCFMLP(
+    #         n_exog=Z.shape[1],
+    #         continuous_mask=np.repeat(True, X.shape[1]),
+    #         fx_factory=fx_factory,
+    #         fx_imp_factory=fx_imp_factory,
+    #         gv_factory=gv_factory,
+    #         epochs_step_1=1000,
+    #         lr_step_1=1e-3,
+    #         weight_decay_step_1=0e-3,
+    #         predict_imp=False,
+    #     ),
+    # ),
+    # (
+    #     "CF-MLP-2",
+    #     BCFMLP(
+    #         n_exog=Z.shape[1],
+    #         continuous_mask=np.repeat(True, X.shape[1]),
+    #         fx_factory=fx_factory,
+    #         fx_imp_factory=fx_imp_factory,
+    #         gv_factory=gv_factory,
+    #         epochs_step_1=1000,
+    #         lr_step_1=1e-3,
+    #         weight_decay_step_1=2.5e-1,
+    #         predict_imp=False,
+    #     ),
+    # ),
     (
         "OLS-MLP",
         OLSMLP(
             continuous_mask=np.repeat(True, X.shape[1]),
             fx_factory=fx_factory,
-            epochs=1000,
+            epochs=500,
             lr=1e-3,
             weight_decay=1e-3,
         ),
@@ -194,13 +196,15 @@ methods = [
 
 # %%  generate datasets
 X_train, y_train, Z_train, _, _, _ = generate_data_radial_f(
-    n_train, 0.5, f, noise_sd=0.1, seed=rng
+    n_train, 0.5, f, instrument_strength=1.0, noise_sd=0.1, seed=rng
 )
 Z_train = Z_train[:, np.newaxis]
 
 # %%
 test_datasets = [
-    generate_data_radial_f(n_train, int_par, f, noise_sd=0.1, seed=rng)
+    generate_data_radial_f(
+        n_train, int_par, f, instrument_strength=1.0, noise_sd=0.1, seed=rng
+    )
     for int_par in intvec
 ]
 
@@ -283,7 +287,7 @@ dat2plot = dat_methods[dat_methods["env"] == "test"]
 plt.figure()
 
 sns.scatterplot(
-    data=dat2plot[(dat2plot["model"] == "CF-MLP") & (dat2plot["int_par"].isin(js))],
+    data=dat2plot[(dat2plot["model"] == "OLS-MLP") & (dat2plot["int_par"].isin(js))],
     x=f"X{plot_var}",
     # hue="int_par",
     y="y",
@@ -292,7 +296,7 @@ sns.scatterplot(
     color="black",
 )
 
-filter_series = dat2plot["model"].isin(["CF-MLP", "CF-MLP-2"]) & (
+filter_series = dat2plot["model"].isin(["BCF", "CF-MLP-2"]) & (
     dat2plot["int_par"].isin(js)
 )
 sns.scatterplot(
