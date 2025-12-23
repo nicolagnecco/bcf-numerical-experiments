@@ -1,26 +1,25 @@
 source("main/dependencies.R")
 
 # Constant definitions
-MSEFILE1 <- "../python/outputs/exp-identifiability/nonlin_g_True-inst_disc_False-n_5000/20251014_204549/mses.csv"
-MSEFILE1small <- "../python/outputs/exp-identifiability/nonlin_g_True-inst_disc_False-n_1000/20251014_210846/mses.csv"
-MSEFILE2 <- "../python/outputs/exp-identifiability/nonlin_g_False-inst_disc_True-n_5000/20251015_094012/mses.csv"
-MSEFILE2small <- "../python/outputs/exp-identifiability/nonlin_g_False-inst_disc_True-n_1000/20251015_093636/mses.csv"
-CSVFILE <- "../python/outputs/exp-identifiability/nonlin_g_True-inst_disc_False-n_5000/20251014_204549/predictions.csv"
-CSVFILEsmall <- "../python/outputs/exp-identifiability/nonlin_g_True-inst_disc_False-n_1000/20251014_210846/predictions.csv"
-FILENAME1 <- glue::glue("../results/figures/app-identifiability-mse-1.pdf")
-FILENAME2 <- glue::glue("../results/figures/app-identifiability-mse-2.pdf")
+MSEFILE1 <- "../results/output_data/exp-identifiability/nonlin_g_True-inst_disc_False-n_5000/20251014_204549/mses.csv"
+MSEFILE1small <- "../results/output_data/exp-identifiability/nonlin_g_True-inst_disc_False-n_1000/20251014_210846/mses.csv"
+MSEFILE2 <- "../results/output_data/exp-identifiability/nonlin_g_False-inst_disc_True-n_5000/20251015_094012/mses.csv"
+MSEFILE2small <- "../results/output_data/exp-identifiability/nonlin_g_False-inst_disc_True-n_1000/20251015_093636/mses.csv"
+CSVFILE <- "../results/output_data/exp-identifiability/nonlin_g_True-inst_disc_False-n_5000/20251014_204549/predictions.csv"
+CSVFILEsmall <- "../results/output_data/exp-identifiability/nonlin_g_True-inst_disc_False-n_1000/20251014_210846/predictions.csv"
+FILENAME1 <- glue::glue("../results/figures/app-identifiability-mse.pdf")
 
 
 dat <- read_csv(CSVFILEsmall)
 
-ggplot(dat %>% filter(model == "BCF", rep_id==0)) +
+ggplot(dat %>% filter(model == "OLS", rep_id==0)) +
   geom_point(aes(x = X1, y = y)) +
   geom_point(aes(x = X1, y = y_hat), alpha = 0.5, col = "tomato")
 
 ## 1) Define your mapping in one place
 methods_map <- tibble::tibble(
   code  = c('BCF', 'CF', 'OLS','IMP','Causal'),
-  label = c('BCF', 'CF', 'LS','BCF-oracle','Structural'),
+  label = c('BCF-XGB', 'CF-XGB', 'LS-XGB','BCF-oracle','Structural'),
   color = c(
     my_palette$c3,             # BCF
     my_palette$c2,             # CF
@@ -63,21 +62,28 @@ mses_linear_g <- bind_rows(
             max_mse = quantile(test_mse, p=1),
             min_mse = quantile(test_mse, p=0))
 
+assumption_labels <-  c("Assumption 3 (lin. $\\gamma$ and discr. Z)",
+                        "Assumption 4 (diff.ble $\\gamma$ and f)")
+
 mses <- bind_rows(
-  mses_nonlinear_g %>% mutate(assumption = "Assumption 4 (diff.ble g and f)"),
-  mses_linear_g %>% mutate(assumption = "Assumption 3 (lin. g and discr. Z)")
-)
+  mses_nonlinear_g %>% mutate(assumption = "b"),
+  mses_linear_g %>% mutate(assumption = "a")
+) %>% 
+  mutate(assumption = factor(assumption,
+                             levels = c("a", "b"),
+                             labels = TeX(assumption_labels)))
 
 mses2 <- mses %>%
   filter(model %in% breaks_vec) %>%
   mutate(model_ = factor(model, levels = breaks_vec)) %>% 
-  mutate(n = paste0("n = ", n)) %>% 
+  mutate(n = texify_column(n, "n")) %>% 
   filter(model_ != "CFx")
 
 ## 4) Plot (color + shape share the same legend)
 gg <- ggplot(mses2 %>% arrange(desc(model_)),
              aes(x = int_par, y = mse, color = model_, shape = model_)) +
-  facet_grid(assumption ~ n, scales = "free_y") +
+  facet_grid(assumption ~ n, scales = "free_y",
+             labeller = label_parsed) +
   # geom_ribbon(aes(x = int_par,ymin=min_mse,ymax=max_mse, fill = model_), alpha = .25) +
   geom_line() +
   geom_point(fill = "white", size = 2, stroke = 0.75, alpha = 0.75) +
@@ -96,4 +102,4 @@ gg <- ggplot(mses2 %>% arrange(desc(model_)),
   labs(x = "Perturbation Strength", y = "MSE"); gg
 
 
-save_myplot(plt = gg, plt_nm = FILENAME1, width = 2.5, height = 2.5)
+save_myplot(plt = gg, plt_nm = FILENAME1, width = 2, height = 2)
