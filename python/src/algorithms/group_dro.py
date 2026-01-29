@@ -15,11 +15,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.linear_model._base import LinearModel
 from sklearn.model_selection import GridSearchCV
 from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
-from src.algorithms.group_dro_utils import (
-    MyLossComputer,
-    fit_groupdro,
-    make_loader_from_numpy,
-)
+from src.algorithms.group_dro_utils import (MyLossComputer, fit_groupdro,
+                                            make_loader_from_numpy)
 from src.bcf.helpers import split_cont_cat, split_X_and_Z
 from src.bcf.mlp import MLP
 from src.bcf.reduced_rank_regression import cross_validate_rrr, learn_ker_M_0_T

@@ -75,6 +75,7 @@ class MyLossComputer:
 
         with torch.no_grad():
             adjusted = group_loss * observed  # unseen groups -> factor = exp(0) = 1
+            adjusted = adjusted - adjusted.max()  # numerical stabilisation
             self.adv_probs *= torch.exp(self.step_size * adjusted.detach())
             self.adv_probs /= self.adv_probs.sum().clamp(min=1e-12)
 
