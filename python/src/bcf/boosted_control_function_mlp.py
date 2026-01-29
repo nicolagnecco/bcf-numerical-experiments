@@ -1,5 +1,5 @@
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Optional, Tuple, Union
 
 import numpy as np
@@ -9,14 +9,8 @@ from pytorch_lightning import seed_everything
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
 from src.bcf.helpers import split_cont_cat, split_X_and_Z
-from src.bcf.mlp import (
-    MLP,
-    predict_full,
-    predict_fx_only,
-    train_fx,
-    train_fx_gv,
-    train_fx_imp,
-)
+from src.bcf.mlp import (MLP, predict_full, predict_fx_only, train_fx,
+                         train_fx_gv, train_fx_imp)
 from src.bcf.reduced_rank_regression import cross_validate_rrr, learn_ker_M_0_T
 
 
@@ -27,7 +21,7 @@ class BCFMLP(BaseEstimator):
     fx_factory: Callable[[int], MLP]  # lambda x: MLP(in_dim=x)
     fx_imp_factory: Callable[[int], MLP]  # lambda x: MLP(in_dim=x)
     gv_factory: Callable[[int], MLP]  # lambda x: MLP(in_dim=x)
-    alphas: np.ndarray = 10 ** np.arange(-5.0, 6.0)
+    alphas: np.ndarray = field(default_factory= lambda: 10 ** np.arange(-5.0, 6.0))
     predict_imp: bool = True
     weight_decay_f: float = 1e-4
     weight_decay_g: float = 1e-4
