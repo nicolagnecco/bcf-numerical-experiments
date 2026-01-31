@@ -1,6 +1,7 @@
-import numpy as np
 from dataclasses import dataclass
 from typing import Optional
+
+import numpy as np
 
 
 @dataclass
@@ -187,9 +188,9 @@ class Split:
     threshold: Optional[float] = None
     data_left: Optional[Dataset] = None
     data_right: Optional[Dataset] = None
-    impurity_left: float = np.Inf
-    impurity_right: float = np.Inf
-    impurity_decrease: float = np.Inf
+    impurity_left: float = np.inf
+    impurity_right: float = np.inf
+    impurity_decrease: float = np.inf
     value_left: Optional[float] = None
     value_right: Optional[float] = None
     has_failed: bool = False
