@@ -12,7 +12,7 @@ from omegaconf import DictConfig
 from sklearn.linear_model import LinearRegression
 from src.algorithms.oracle_methods import ConstantFunc, IMPFunctionNonLin
 from src.bcf.boosted_control_function_2 import BCF, OLS
-from src.bcf.boosted_control_function_mlp import BCFMLP
+from src.bcf.boosted_control_function_mlp import BCFMLP, OLSMLP
 from src.bcf.mlp import MLP
 from src.scenarios.generate_data import generate_data_radial_f
 from src.scenarios.generate_helpers import radial2D
@@ -41,6 +41,19 @@ def factory_bcf_mlp(n_exog, continuous_mask, hidden):
         weight_decay_f=2.5e-3,
         weight_decay_g=2.5e-3,
         weight_decay_fimp=0.0,
+    )
+
+
+def factory_ols_mlp(continuous_mask, hidden):
+
+    fx_factory = lambda x: MLP(in_dim=x, hidden=hidden, activation=nn.Sigmoid)  # type: ignore
+
+    return OLSMLP(
+        continuous_mask=continuous_mask,
+        fx_factory=fx_factory,
+        weight_decay=2.5e-3,
+        lr=1e-3,
+        epochs=1500,
     )
 
 
@@ -154,6 +167,12 @@ def simulation_run(
             "OLS",
             OLS(fx=XGBRegressor(learning_rate=LR)),
         ),
+        (
+            "OLSMLP",
+            factory_ols_mlp(
+                continuous_mask=np.repeat(True, X_train.shape[1]), hidden=[64]
+            ),
+        ),
     ]
 
     # generate test datasets
@@ -187,7 +206,7 @@ def simulation_run(
         # fit methods
         print(method_name)
 
-        expected_classes = (IMPFunctionNonLin, BCF, BCFMLP, ConstantFunc, OLS)
+        expected_classes = (IMPFunctionNonLin, BCF, BCFMLP, ConstantFunc, OLS, OLSMLP)
 
         if isinstance(method, IMPFunctionNonLin):
             method.fit(np.hstack([X_train, Z_train]), y_train, seed=seed_torch)
@@ -198,7 +217,7 @@ def simulation_run(
         elif isinstance(method, ConstantFunc):
             method.fit(X_train, y_train, Z_train)
 
-        elif isinstance(method, OLS):
+        elif isinstance(method, (OLS, OLSMLP)):
             method.fit(X_train, y_train, seed=seed_torch)
 
         else:
