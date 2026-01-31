@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Literal, Union
 
 import numpy as np
@@ -17,7 +17,7 @@ from xgboost import XGBRegressor
 class CausalFunction:
     """Oracle for causal function"""
 
-    causal_function: Union[Tree, Any] = Tree()
+    causal_function: Union[Tree, Any] = field(default_factory=Tree)
     name: str = "causal_function"
     is_fitted_: bool = False
 
@@ -42,10 +42,10 @@ class CausalFunction:
 class IMPFunction:
     """Oracle for IMP function"""
 
-    causal_function: Union[Tree, Any] = Tree()
-    instrument_matrix: np.ndarray = np.array([])
-    confounder_cov: np.ndarray = np.array([])
-    confounder_effect: np.ndarray = np.array([])
+    causal_function: Union[Tree, Any] = field(default_factory=Tree)
+    instrument_matrix: np.ndarray = field(default_factory=lambda: np.empty((0, 0)))
+    confounder_cov: np.ndarray = field(default_factory=lambda: np.empty((0, 0)))
+    confounder_effect: np.ndarray = field(default_factory=lambda: np.empty((0, 0)))
     name: str = "imp_function"
     is_fitted_: bool = False
 
@@ -85,10 +85,12 @@ class IMPFunctionNonLin:
     causal_function: Callable[[np.ndarray], np.ndarray]
     n_exog: int
     confounder_effect: Callable[[np.ndarray], np.ndarray]
-    instrument_matrix: np.ndarray = np.array([])
-    confounder_cov: np.ndarray = np.array([])
+    instrument_matrix: np.ndarray = field(default_factory=lambda: np.empty((0, 0)))
+    confounder_cov: np.ndarray = field(default_factory=lambda: np.empty((0, 0)))
     mode: Literal["exact", "computed"] = "exact"
-    boosted_estimator: Union[RandomForestRegressor, XGBRegressor] = XGBRegressor()
+    boosted_estimator: Union[RandomForestRegressor, XGBRegressor] = field(
+        default_factory=lambda: XGBRegressor()
+    )
     use_imp: bool = True
     name: str = "imp_function"
     is_fitted_: bool = False
