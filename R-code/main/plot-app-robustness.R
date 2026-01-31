@@ -1,9 +1,16 @@
 source("main/dependencies.R")
 
 # Constant definitions
-FILENAME1 <- glue::glue("../results/figures/app-robustness.pdf")
+FILENAME1 <- glue::glue("../results/figures/app-robustness-2.pdf")
 
-root_folder <- "../results/output_data/exp-robustness/20251018_212503"
+root_folder <- "../results/output_data/exp-robustness/20260129_231908/"
+root_folder2 <- "../results/output_data/exp-robustness/20260129_230342/"
+
+files_mse <- 
+  c(list.files(root_folder, pattern="mses\\.csv", recursive = TRUE, 
+               full.names=TRUE),
+    list.files(root_folder2, pattern="mses\\.csv", recursive = TRUE, 
+               full.names=TRUE))
 
 files_mse <- 
   c(list.files(root_folder, pattern="mses\\.csv", recursive = TRUE, 
@@ -33,7 +40,7 @@ methods_map <- tibble::tibble(
   label = c('BCF-XGB', 'BCF-MLP', 'OLS', 'IMP', 'Structural'),
   color = c(
     my_palette$c3,             # BCF
-    cols_mlp[1],             
+    "#479FF8",             
     my_palette$yellow, # OLS
     "black", #my_palette$blue2,       # IMP
     "black" #my_palette$darkgrey       # Causal
@@ -58,7 +65,10 @@ breaks_vec <- methods_map$code                   # legend/order anchor
 mses <- dat %>% 
   # filter(rep_id == 1) %>%
   # filter(!(model %in% c("OLS"))) %>% 
+  filter(model != "OLS") %>% 
+  mutate(model = if_else(model=="OLSMLP", "OLS", model)) %>% 
   arrange(n) %>% 
+  filter(n != 1500) %>% 
   mutate(n = texify_column(n, "n"))
 
 mses1 <- mses %>% 
@@ -83,19 +93,20 @@ mses3 <-  mses %>%
 ## 4) Plot (color + shape share the same legend)
 gg <- ggplot(
   mses2 %>% arrange(desc(model_)) %>% 
-    filter(model_ %in% c("BCF", "BCF-MLP-large")),
+    filter(model_ %in% c("BCF", "BCF-MLP-large", "OLS")) %>% 
+    filter(n == (mses$n %>% unique())[3]),
   aes(x = int_par, y = mse, color = model_, fill = model_,
       shape = model_, linetype = model_)
 ) +
-  facet_grid(~ n, scales = "fixed", labeller = label_parsed) +
+  # facet_grid(~ n, scales = "fixed", labeller = label_parsed) +
   geom_line(
     data = mses2 %>%
       arrange(desc(model_)) %>%
-      filter(model_ %in% c("IMP", "Causal")), size=.35
+      filter(model_ %in% c("IMP")), size=.35
   ) +
   geom_ribbon(aes(ymin = min_mse, ymax = max_mse),
               alpha = .125, size=.2) +  # no edge line
-  # geom_line(data=mses3 %>% arrange(desc(model_)) %>% 
+  # geom_line(data=mses3 %>% arrange(desc(model_)) %>%
   #             filter(model_ %in% c("BCF", "BCF-MLP-large")),
   #           aes(x = int_par, y = test_mse, color = model_,
   #               group = interaction(model, rep_id)),
@@ -107,6 +118,43 @@ gg <- ggplot(
   scale_shape_manual(values = shape_vec, breaks = breaks_vec, labels = lab_vec) +
   scale_linetype_manual(values = linetype_vec, breaks = breaks_vec, labels = lab_vec) +
   labs(x = "Perturbation Strength", y = "MSE", color = "Methods",
-       fill = "Methods", shape = "Methods", linetype = "Methods") ; gg
+       fill = "Methods", shape = "Methods", linetype = "Methods") +
+  theme(legend.position = "none") + 
+  xlab("") +
+  ylab("") +
+  coord_cartesian(ylim = c(0.3, 4.75)); gg
 
-save_myplot(plt = gg, plt_nm = FILENAME1, width = 1.75, height = 1.75)
+save_myplot(plt = gg, plt_nm = "../results/figures/app-robustness-n-3000.pdf", 
+            width = 1.75, height = 1.75)
+
+# Slides
+mses_BCF <- dat %>% 
+  arrange(n) %>% 
+  group_by(model, int_par, n, instr_str) %>% 
+  summarise(mse = mean(test_mse)) %>% 
+  filter(model %in% c("BCF-MLP-large")) %>% 
+  mutate(model = paste(model, n))
+
+gg <- ggplot(
+  mses_BCF,
+  aes(x = int_par, y = mse, color = model, fill = model,
+      shape = model, linetype = model)
+) +
+  # facet_grid(~ n, scales = "fixed", labeller = label_parsed) +
+  geom_line(
+    data = mses2 %>%
+      arrange(desc(model_)) %>%
+      filter(model_ %in% c("IMP")), size=.35
+  ) +
+  geom_line() +
+  coord_cartesian(ylim = c(1, 1.5))
+gg
+
+gg <- ggplot(
+  mses_BCF %>% filter(int_par == 2),
+  aes(x = n, y = mse)
+) +
+  # facet_grid(~ n, scales = "fixed", labeller = label_parsed) +
+  geom_line() 
+
+gg
